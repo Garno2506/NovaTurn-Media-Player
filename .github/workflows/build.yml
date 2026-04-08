@@ -12,25 +12,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Python version
+        shell: cmd
         run: |
           "C:\Program Files\Python314\python.exe" --version
 
       - name: Install dependencies
+        shell: cmd
         run: |
           "C:\Program Files\Python314\python.exe" -m pip install --upgrade pip
           "C:\Program Files\Python314\python.exe" -m pip install -r requirements.txt
           "C:\Program Files\Python314\python.exe" -m pip install pyinstaller
 
       - name: Clean previous builds
+        shell: cmd
         run: |
-          if (Test-Path build) { Remove-Item build -Recurse -Force }
-          if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+          if exist build rmdir /s /q build
+          if exist dist rmdir /s /q dist
 
       - name: Build EXE using PyInstaller
+        shell: cmd
         run: |
           "C:\Program Files\Python314\python.exe" -m PyInstaller app\NovaTurn.spec
 
       - name: Build Installer using Inno Setup
+        shell: cmd
         run: |
           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" NovaTurnInstaller.iss
 
