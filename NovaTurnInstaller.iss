@@ -1,6 +1,12 @@
 ; --- Automatic Versioning ---
-; GitHub Actions will pass /DMyBuildNumber=### into this file
-#define MyAppVersion "1.0.0.{#MyBuildNumber}"
+
+; If MyBuildNumber is not passed from the command line, default to 0
+#ifndef MyBuildNumber
+  #define MyBuildNumber "0"
+#endif
+
+; Build full version string: 1.0.0.<build>
+#define MyAppVersion "1.0.0." + MyBuildNumber
 
 [Setup]
 AppId={{F4C9C9C4-9F0E-4F3E-9F11-ABCD1234NOVA}}
@@ -11,16 +17,14 @@ DefaultDirName={pf}\NovaTurn
 DefaultGroupName=NovaTurn
 DisableDirPage=no
 DisableProgramGroupPage=no
-
-; Installer filename will now include the version
 OutputBaseFilename=NovaTurnSetup-{#MyAppVersion}
-
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=app\assets\branding\novaturn.ico
 
 UninstallDisplayIcon={app}\NovaTurn.exe
 WizardStyle=modern
+
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
