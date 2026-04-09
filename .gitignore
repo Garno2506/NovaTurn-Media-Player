@@ -56,3 +56,5 @@ _temp/
 # --- GitHub Actions temp folders ---
 actions-runner/
 actions/
+
+_runner/
