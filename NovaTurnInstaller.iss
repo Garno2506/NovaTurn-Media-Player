@@ -1,13 +1,18 @@
+; --- Versioning (safe mode) ---
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0.0"
+#endif
+
 [Setup]
 AppId={{F4C9C9C4-9F0E-4F3E-9F11-ABCD1234NOVA}}
 AppName=NovaTurn
-AppVersion=1.0.0
+AppVersion={#MyAppVersion}
 AppPublisher=Micks Media
 DefaultDirName={pf}\NovaTurn
 DefaultGroupName=NovaTurn
 DisableDirPage=no
 DisableProgramGroupPage=no
-OutputBaseFilename=NovaTurnSetup
+OutputBaseFilename=NovaTurnSetup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=app\assets\branding\novaturn.ico
@@ -22,10 +27,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
 
 [Files]
-; Copy the entire PyInstaller output folder
 Source: "dist\NovaTurn\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 Source: "app\assets\branding\novaturn.ico"; DestDir: "{app}"; Flags: ignoreversion
-
 
 [Icons]
 Name: "{group}\NovaTurn"; Filename: "{app}\NovaTurn.exe"; WorkingDir: "{app}"; IconFilename: "{app}\NovaTurn.ico"
@@ -33,4 +36,5 @@ Name: "{commondesktop}\NovaTurn"; Filename: "{app}\NovaTurn.exe"; WorkingDir: "{
 
 [Run]
 Filename: "{app}\NovaTurn.exe"; Flags: nowait postinstall
+
 
