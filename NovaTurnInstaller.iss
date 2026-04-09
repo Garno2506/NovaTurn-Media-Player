@@ -25,8 +25,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 ; Copy the entire PyInstaller output folder
 Source: "dist\NovaTurn\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
-; Copy the icon file so shortcuts can use it
-Source: "app\assets\branding\novaturn.ico"; DestDir: "{app}"; Flags: ignoreversion
+
 
 [Icons]
 Name: "{group}\NovaTurn"; Filename: "{app}\NovaTurn.exe"; WorkingDir: "{app}"; IconFilename: "{app}\NovaTurn.ico"
