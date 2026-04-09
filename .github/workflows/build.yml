@@ -1,0 +1,54 @@
+name: Build NovaTurn
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Python version
+        shell: cmd
+        run: |
+          "C:\Program Files\Python314\python.exe" --version
+
+      - name: Install dependencies
+        shell: cmd
+        run: |
+          "C:\Program Files\Python314\python.exe" -m pip install --upgrade pip
+          "C:\Program Files\Python314\python.exe" -m pip install -r requirements.txt
+          "C:\Program Files\Python314\python.exe" -m pip install pyinstaller
+
+      - name: Clean previous builds
+        shell: cmd
+        run: |
+          if exist build rmdir /s /q build
+          if exist dist rmdir /s /q dist
+
+      - name: Build EXE using PyInstaller
+        shell: cmd
+        run: |
+          "C:\Program Files\Python314\python.exe" -m PyInstaller app\NovaTurn.spec
+
+      - name: Build Installer using Inno Setup
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" ^
+            /DMyAppVersion=1.0.0.%GITHUB_RUN_NUMBER% ^
+            NovaTurnInstaller.iss
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaTurn-EXE
+          path: dist/NovaTurn/
+
+      - name: Upload Installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaTurn-Installer
+          path: Output/
