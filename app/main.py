@@ -59,6 +59,18 @@ import vlc
 #  DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
 # ============================================================
 
+# Lazy VLC loader — safe, does NOT move or alter bootstrap
+_vlc = None
+
+def get_vlc():
+    global _vlc
+    if _vlc is None:
+        import vlc
+        _vlc = vlc
+    return _vlc
+
+
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtChart import (
     QChart,
@@ -138,9 +150,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         # VLC
         # DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
-        self.instance = vlc.Instance("--aout=directsound")
-        self.player = self.instance.media_player_new()
-        self.player.audio_set_volume(40)
+        self.instance = None
+        self.player = None
         self._pre_mute_volume = 40
 
         # DB + password
@@ -148,6 +159,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.password_manager = PasswordManager()
 
         # Playback state
+        self.ensure_vlc()
         self.current_playlist = []
         self.current_index = -1
         self.is_shuffle = False
@@ -231,6 +243,16 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # Start 5-second gap before next track
         self.gap_active = True
         self.gap_start_time = time.time()
+
+    def ensure_vlc(self):
+        if self.instance is None:
+            vlc = get_vlc()
+            self.instance = vlc.Instance("--aout=directsound")
+            self.player = self.instance.media_player_new()
+            self.player.audio_set_volume(self._pre_mute_volume)
+
+
+
 
 # ============================================================
 #  CHUNK B — FULL UI BUILD + STYLESHEET (FINAL FIXED VERSION)
