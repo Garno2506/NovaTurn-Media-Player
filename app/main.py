@@ -1925,9 +1925,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         target.setCursorPosition(cursor + 1)
         target.setFocus()
 
-
-
-
     # ------------------------------------------------------------
     # NAVIGATION HELPER
     # ------------------------------------------------------------
@@ -2046,9 +2043,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
             # Mark as positioned so we NEVER reposition again
                 self.keyboard.auto_positioned = True
-
-
-
 
 # ============================================================
 #  MAIN ENTRY POINT
