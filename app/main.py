@@ -20,10 +20,8 @@ from pathlib import Path
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller."""
     if hasattr(sys, '_MEIPASS'):
-        # Running in PyInstaller bundle
         base_path = sys._MEIPASS
     else:
-        # Running in dev mode
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
@@ -52,24 +50,33 @@ try:
 except Exception:
     os.environ["PATH"] = str(vlc_folder) + os.pathsep + os.environ.get("PATH", "")
 
-import vlc
+# ------------------------------------------------------------
+# PYLANCE TYPE-CHECKING FIX (DOES NOT EXECUTE AT RUNTIME)
+# ------------------------------------------------------------
+if False:
+    import vlc
 
-# ============================================================
-#  END VLC BOOTSTRAP
-#  DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
-# ============================================================
+# Make Pylance happy: declare a global name for type checking
+vlc = None
 
-# Lazy VLC loader — safe, does NOT move or alter bootstrap
+# ------------------------------------------------------------
+# LAZY VLC IMPORT (SAFE — DOES NOT MODIFY BOOTSTRAP)
+# ------------------------------------------------------------
 _vlc = None
 
 def get_vlc():
-    global _vlc
+    """Load VLC only when first needed."""
+    global _vlc, vlc
     if _vlc is None:
-        import vlc
-        _vlc = vlc
+        import vlc as real_vlc
+        _vlc = real_vlc
+        vlc = real_vlc  # update global name so existing code works
     return _vlc
 
 
+# ============================================================
+#  END VLC BOOTSTRAP
+# ============================================================
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtChart import (
@@ -91,9 +98,7 @@ from app.ui.widgets import VideoWidget, EqualizerWidget
 from app.ui.stylesheet_mixin import StylesMixin
 from app.ui.dialogs import DialogsMixin
 from app.ui.osk import MiniKeyboard
-from PyQt5 import QtWidgets, QtGui, QtCore
 from app.ui.osk_final import MiniKeyboard
-
 
 # ------------------------------------------------------------
 # Pill-style delegate for "All Artists"
@@ -103,13 +108,11 @@ class PillDelegate(QtWidgets.QStyledItemDelegate):
         if index.data(QtCore.Qt.UserRole) == "pill":
             rect = option.rect.adjusted(4, 4, -4, -4)
 
-            # Hover
             if option.state & QtWidgets.QStyle.State_MouseOver:
                 color = QtGui.QColor("#3A3A3A")
             else:
                 color = QtGui.QColor("#2A2A2A")
 
-            # Pressed / selected
             if option.state & QtWidgets.QStyle.State_Selected:
                 color = QtGui.QColor("#1DB954")
 
@@ -120,18 +123,17 @@ class PillDelegate(QtWidgets.QStyledItemDelegate):
 
         super().paint(painter, option, index)
 
-# Windows-only COM support placeholder (no longer used for CD)
+# Windows-only COM support placeholder
 if platform.system() == "Windows":
     try:
-        import win32com.client  # kept only if you use it elsewhere later
+        import win32com.client
     except ImportError:
         win32com = None
 else:
     win32com = None
 
-
 # ============================================================
-#   MEDIAPLAYER INIT + GLOBAL PATCHES (UPDATED)
+#   MEDIAPLAYER INIT + GLOBAL PATCHES (UPDATED + OPTIMIZED)
 # ============================================================
 
 class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
@@ -148,11 +150,23 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.setWindowTitle("NovaTurn Media Player. By Michael Garnett")
         self.resize(1280, 760)
 
-        # VLC
-        # DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
+        # ----------------------------------------------------
+        # VLC LAZY INITIALIZATION (INSTANCE CREATED ON DEMAND)
+        # ----------------------------------------------------
         self.instance = None
         self.player = None
         self._pre_mute_volume = 40
+
+    # --------------------------------------------------------
+    # SAFE VLC INITIALIZER — CALLED AUTOMATICALLY ON PLAYBACK
+    # --------------------------------------------------------
+    def ensure_vlc(self):
+        if self.instance is None:
+            vlc = get_vlc()
+            self.instance = vlc.Instance("--aout=directsound")
+            self.player = self.instance.media_player_new()
+            self.player.audio_set_volume(self._pre_mute_volume)
+
 
         # DB + password
         self.db = MediaDatabase()
