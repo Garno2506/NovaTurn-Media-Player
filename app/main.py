@@ -51,10 +51,11 @@ except Exception:
     os.environ["PATH"] = str(vlc_folder) + os.pathsep + os.environ.get("PATH", "")
 
 # ------------------------------------------------------------
-# PYLANCE TYPE-CHECKING FIX (DOES NOT EXECUTE AT RUNTIME)
+# PYLANCE TYPE-CHECKING FIX (SAFE — DOES NOT CREATE GLOBAL NAME)
 # ------------------------------------------------------------
 if False:
-    import vlc
+    import vlc as vlc
+
 
 # Make Pylance happy: declare a global name for type checking
 vlc = None
@@ -173,7 +174,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.password_manager = PasswordManager()
 
         # Playback state
-        self.ensure_vlc()
         self.current_playlist = []
         self.current_index = -1
         self.is_shuffle = False
