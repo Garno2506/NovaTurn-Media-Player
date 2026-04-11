@@ -69,8 +69,6 @@ def get_vlc():
         _vlc = vlc
     return _vlc
 
-
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtChart import (
     QChart,
@@ -250,9 +248,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             self.instance = vlc.Instance("--aout=directsound")
             self.player = self.instance.media_player_new()
             self.player.audio_set_volume(self._pre_mute_volume)
-
-
-
 
 # ============================================================
 #  CHUNK B — FULL UI BUILD + STYLESHEET (FINAL FIXED VERSION)
