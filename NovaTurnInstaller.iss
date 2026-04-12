@@ -7,7 +7,7 @@
 AppId={{F4C9C9C4-9F0E-4F3E-9F11-ABCD1234NOVA}}
 AppName=NovaTurn
 AppVersion={#MyAppVersion}
-AppPublisher=Micks Media
+AppPublisher=NovaTurn Media
 DefaultDirName={pf}\NovaTurn
 DefaultGroupName=NovaTurn
 DisableDirPage=no
