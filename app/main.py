@@ -13,7 +13,6 @@ import hmac
 import ctypes
 from pathlib import Path
 
-
 # ============================================================
 #   UNIVERSAL RESOURCE LOADER — FINAL, FROZEN VERSION
 # ============================================================
