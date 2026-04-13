@@ -9,8 +9,11 @@ project_root = os.path.abspath(os.getcwd())
 
 # Helper to include entire folders cleanly
 def collect_folder(src_folder, dest_folder):
-    return [(os.path.join(src_folder, f), os.path.join(dest_folder, f))
-            for f in os.listdir(src_folder)]
+    return [
+        (os.path.join(src_folder, f), os.path.join(dest_folder, f))
+        for f in os.listdir(src_folder)
+    ]
+
 
 # Paths inside your project
 assets_path   = os.path.join(project_root, "app", "assets", "branding")
@@ -29,7 +32,7 @@ a = Analysis(
         # VLC folder (DLLs + plugins)
         (vlc_path, 'vlc'),
 
-        # OSK PNG + any future banners
+        # OSK PNG + splash screen + any future banners
         (banners_path, 'banners'),
     ],
 

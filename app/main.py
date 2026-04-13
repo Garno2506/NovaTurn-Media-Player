@@ -212,7 +212,7 @@ class NovaTurnSplash(QSplashScreen):
     """
 
     def __init__(self, app: QtWidgets.QApplication):
-        pix = QPixmap(resource_path("assets/branding/novaturn_splash.png"))
+        pix = QPixmap(resource_path("banners/novaturn_splash.png"))
         super().__init__(pix)
         self.app = app
 
