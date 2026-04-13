@@ -36,8 +36,9 @@ jobs:
         shell: cmd
         run: |
           set VERSION=1.0.0.%GITHUB_RUN_NUMBER%
-          powershell -Command "(Get-Content main.py) -replace 'APP_LOCAL_VERSION = \"[0-9\.]+\"', 'APP_LOCAL_VERSION = \"%VERSION%\"' | Set-Content main.py"
-          echo Injected version %VERSION% into main.py
+          powershell -Command "(Get-Content app/main.py) -replace 'APP_LOCAL_VERSION = \"[0-9\.]+\"', 'APP_LOCAL_VERSION = \"%VERSION%\"' | Set-Content app/main.py"
+          echo Injected version %VERSION% into app/main.py
+
 
       - name: Build EXE using PyInstaller
         shell: cmd
