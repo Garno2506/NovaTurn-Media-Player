@@ -91,6 +91,9 @@ from app.ui.stylesheet_mixin import StylesMixin
 from app.ui.dialogs import DialogsMixin
 from app.ui.osk import MiniKeyboard
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtWidgets import QSplashScreen, QLabel
+from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtCore import QTimer, QPropertyAnimation, QEasingCurve, QPoint
 from app.ui.osk_final import MiniKeyboard
 
 
@@ -127,6 +130,218 @@ if platform.system() == "Windows":
         win32com = None
 else:
     win32com = None
+
+# ============================================================
+#   APP VERSION + GITHUB UPDATE HELPERS
+# ============================================================
+
+APP_LOCAL_VERSION = "1.0.0.0"  # your current build version
+GITHUB_OWNER = "Garno2506"
+GITHUB_REPO = "NovaTurn"
+GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+
+
+def get_latest_version():
+    """Fetch latest release tag from GitHub. Returns tag string or None."""
+    try:
+        resp = requests.get(GITHUB_API_LATEST, timeout=5)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        tag = data.get("tag_name") or data.get("name")
+        if not tag:
+            return None
+        return str(tag).strip()
+    except Exception:
+        return None
+
+
+def is_update_newer(local_ver: str, remote_ver: str) -> bool:
+    """Compare two version strings like v1.0.0.0 or 1.0.0.0."""
+    if not remote_ver:
+        return False
+
+    def norm(v):
+        v = v.strip().lower()
+        if v.startswith("v"):
+            v = v[1:]
+        parts = v.split(".")
+        nums = []
+        for p in parts:
+            try:
+                nums.append(int(p))
+            except ValueError:
+                nums.append(0)
+        while len(nums) < 4:
+            nums.append(0)
+        return tuple(nums[:4])
+
+    return norm(remote_ver) > norm(local_ver)
+
+
+def prompt_update(parent, latest_tag: str):
+    """Ask user if they want to open the latest release page."""
+    if not latest_tag:
+        return
+    msg = QtWidgets.QMessageBox(parent)
+    msg.setIcon(QtWidgets.QMessageBox.Information)
+    msg.setWindowTitle("Update Available")
+    msg.setText(
+        f"A new NovaTurn release is available:\n\n"
+        f"Current: {APP_LOCAL_VERSION}\n"
+        f"Latest:  {latest_tag}\n\n"
+        f"Open the release page in your browser?"
+    )
+    msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+    if msg.exec_() == QtWidgets.QMessageBox.Yes:
+        url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+        webbrowser.open(url)
+
+
+# ============================================================
+#   CINEMATIC SPLASH SCREEN (FADE IN / OUT + VERSION)
+# ============================================================
+
+class NovaTurnSplash(QSplashScreen):
+    """
+    Cinematic splash screen:
+      - Shows novaturn_splash.png
+      - Bottom-left: 'Release vX.X.X.X'
+      - Center text: 'Loading… Checking for updates…'
+      - Fade-in (1s), min display (2s), fade-out (1s)
+      - Runs GitHub version check while visible
+    """
+
+    def __init__(self, app: QtWidgets.QApplication):
+        pix = QPixmap(resource_path("assets/branding/novaturn_splash.png"))
+        super().__init__(pix)
+        self.app = app
+
+        # Track timing
+        self._start_ms = None
+        self._min_display_ms = 2000  # 2 seconds
+        self._fade_duration_ms = 1000  # 1 second
+
+        # Latest version from GitHub
+        self._latest_tag = None
+
+        # Small, subtle version label (bottom-left)
+        self.version_label = QLabel(self)
+        self.version_label.setText("Release " + APP_LOCAL_VERSION)
+        font = QFont()
+        font.setPointSize(11)  # small & subtle
+        self.version_label.setFont(font)
+        self.version_label.setStyleSheet("color: #C8C8C8;")
+        self.version_label.adjustSize()
+        self._position_version_label()
+
+        # Status label (center-ish)
+        self.status_label = QLabel(self)
+        self.status_label.setText("Loading… Checking for updates…")
+        sfont = QFont()
+        sfont.setPointSize(12)
+        self.status_label.setFont(sfont)
+        self.status_label.setStyleSheet("color: #E0E0E0;")
+        self.status_label.adjustSize()
+        self._position_status_label()
+
+        # Opacity animation
+        self._opacity_effect = QtWidgets.QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._opacity_effect)
+        self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity", self)
+        self._fade_anim.setEasingCurve(QEasingCurve.InOutQuad)
+        self._fade_anim.finished.connect(self._on_fade_finished)
+
+        self._phase = "idle"  # "fade_in", "hold", "fade_out"
+        self._on_finished_callback = None
+
+    def _position_version_label(self):
+        margin = 10
+        h = self.pixmap().height()
+        self.version_label.move(margin, h - self.version_label.height() - margin)
+
+    def _position_status_label(self):
+        # Center horizontally, slightly below vertical center
+        w = self.pixmap().width()
+        h = self.pixmap().height()
+        sw = self.status_label.width()
+        sh = self.status_label.height()
+        x = (w - sw) // 2
+        y = int(h * 0.7) - sh // 2
+        self.status_label.move(x, y)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._position_version_label()
+        self._position_status_label()
+
+    def start(self, on_finished_callback):
+        """
+        Show splash, fade in, run update check, then fade out and call callback.
+        """
+        self._on_finished_callback = on_finished_callback
+        self._phase = "fade_in"
+        self._start_ms = QtCore.QTime.currentTime().msecsSinceStartOfDay()
+
+        # Start fully transparent
+        self._opacity_effect.setOpacity(0.0)
+        self.show()
+        self.raise_()
+        self.app.processEvents()
+
+        # Fade in
+        self._fade_anim.stop()
+        self._fade_anim.setDuration(self._fade_duration_ms)
+        self._fade_anim.setStartValue(0.0)
+        self._fade_anim.setEndValue(1.0)
+        self._fade_anim.start()
+
+        # Kick off update check shortly after show
+        QTimer.singleShot(150, self._run_update_check)
+
+    def _run_update_check(self):
+        # Blocking call, but short; we stay on splash anyway
+        latest = get_latest_version()
+        if latest:
+            self._latest_tag = latest
+            self.version_label.setText(f"Release {latest}")
+            self.version_label.adjustSize()
+            self._position_version_label()
+
+        # Decide when to start fade-out based on min display time
+        now_ms = QtCore.QTime.currentTime().msecsSinceStartOfDay()
+        elapsed = now_ms - (self._start_ms or now_ms)
+        remaining = max(0, self._min_display_ms - elapsed)
+
+        # After remaining time, start fade-out
+        QTimer.singleShot(remaining, self._begin_fade_out)
+
+    def _begin_fade_out(self):
+        if self._phase == "fade_out":
+            return
+        self._phase = "fade_out"
+        self._fade_anim.stop()
+        self._fade_anim.setDuration(self._fade_duration_ms)
+        self._fade_anim.setStartValue(1.0)
+        self._fade_anim.setEndValue(0.0)
+        self._fade_anim.start()
+
+    def _on_fade_finished(self):
+        if self._phase == "fade_in":
+            # Just finished fade-in; hold until update check decides to fade out
+            self._phase = "hold"
+            return
+
+        if self._phase == "fade_out":
+            # Done; hide splash and call callback
+            self.hide()
+            if self._on_finished_callback:
+                cb = self._on_finished_callback
+                self._on_finished_callback = None
+                cb()
+            return
+
+
 
 
 # ============================================================
@@ -2051,19 +2266,33 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    player = MediaPlayer()
 
-    # Blur disabled so native title bar and buttons stay fully visible
-    # try:
-    #     hwnd = int(player.winId())
-    #     enable_windows_blur(hwnd)
-    # except Exception as e:
-    #     print("Blur not available:", e)
+    # --- Cinematic splash screen with update check ---
+    splash = NovaTurnSplash(app)
 
-    player.show()
+    # This callback will be called after splash fade-out
+    def launch_main_window():
+        player = MediaPlayer()
+
+        # Blur disabled so native title bar and buttons stay fully visible
+        # try:
+        #     hwnd = int(player.winId())
+        #     enable_windows_blur(hwnd)
+        # except Exception as e:
+        #     print("Blur not available:", e)
+
+        player.show()
+
+        # If an update is available, prompt once the main window exists
+        if splash._latest_tag and is_update_newer(APP_LOCAL_VERSION, splash._latest_tag):
+            prompt_update(player, splash._latest_tag)
+
+    splash.start(launch_main_window)
+
     sys.exit(app.exec_())
 
 
 if __name__ == "__main__":
     main()
+
 
