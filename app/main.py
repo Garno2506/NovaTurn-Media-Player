@@ -255,9 +255,10 @@ class NovaTurnSplash(QSplashScreen):
         self._on_finished_callback = None
 
     def _position_version_label(self):
-        margin = 10
+        margin = 40  # was 10 — raise text upward
         h = self.pixmap().height()
         self.version_label.move(margin, h - self.version_label.height() - margin)
+
 
     def _position_status_label(self):
         # Center horizontally, slightly below vertical center
