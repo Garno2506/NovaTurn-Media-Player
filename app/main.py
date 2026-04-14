@@ -469,6 +469,10 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 #  CHUNK B — FULL UI BUILD + STYLESHEET (FINAL FIXED VERSION)
 # ============================================================
 
+    # ------------------------------------------------------------
+    # HELP WINDOW HANDLER
+    # ------------------------------------------------------------
+
     def toggle_sidebar(self):
         if self._sidebar_anim and self._sidebar_anim.state() == QtCore.QAbstractAnimation.Running:
             return
