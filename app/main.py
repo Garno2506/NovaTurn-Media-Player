@@ -535,6 +535,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.stacked = QtWidgets.QStackedWidget()
         root.addWidget(self.stacked, 1)
 
+
         # ---------------- Home page ----------------
         self.page_home = QtWidgets.QWidget()
         home_layout = QtWidgets.QVBoxLayout(self.page_home)
@@ -700,6 +701,30 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.login_button = QtWidgets.QPushButton("Login")
         self.login_button.setFixedHeight(34)
         top_bar.addWidget(self.login_button)
+
+        # Help button
+        self.help_button = QtWidgets.QPushButton("?")
+        self.help_button.setFixedSize(32, 32)
+        self.help_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.help_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2A2A2A;
+                border: none;
+                color: #E0E0E0;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #3A3A3A;
+            }
+        """)
+        top_bar.addWidget(self.help_button)
+
+        # Switch to Help Page
+        self.help_button.clicked.connect(
+            lambda: self.stacked.setCurrentIndex(self.HELP_PAGE_INDEX)
+        )
 
         # ---------------- MIDDLE LAYOUT + SPLITTER ----------------
         middle_layout = QtWidgets.QHBoxLayout()
@@ -972,6 +997,35 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.stats_right.addStretch()
 
         self.stacked.addWidget(self.page_stats)
+
+        # ---------------- Help page ----------------
+        self.page_help = QtWidgets.QWidget()
+        help_layout = QtWidgets.QVBoxLayout(self.page_help)
+        help_layout.setContentsMargins(32, 32, 32, 32)
+        help_layout.setSpacing(24)
+
+        help_title = QtWidgets.QLabel("Help & Instructions")
+        help_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
+        help_layout.addWidget(help_title)
+
+        self.help_text = QtWidgets.QTextEdit()
+        self.help_text.setReadOnly(True)
+        self.help_text.setStyleSheet(
+            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
+        )
+        self.help_text.setText(
+            "Welcome to NovaTurn!\n\n"
+            "This is your help page. Add instructions here."
+        )
+        help_layout.addWidget(self.help_text)
+
+        help_layout.addStretch()
+        self.stacked.addWidget(self.page_help)
+
+        # Store index for switching
+        self.HELP_PAGE_INDEX = self.stacked.indexOf(self.page_help)
+
+
 
     # ============================================================
     #         MENU + SIGNAL CONNECTIONS (UPDATED + FIXED)
