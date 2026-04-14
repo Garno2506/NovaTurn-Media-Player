@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from app.help_window import HelpWindow
 
 
 class TopBarMixin:
@@ -10,6 +11,7 @@ class TopBarMixin:
       - YouTube search bar (with icon + hover highlight)
       - Library menu button
       - Login button
+      - Help button (new)
     """
 
     def _build_topbar(self):
@@ -135,6 +137,27 @@ class TopBarMixin:
         self.login_button.setFixedHeight(34)
         top_bar.addWidget(self.login_button)
 
-        return top_bar
+        # ------------------------------------------------------------
+        # HELP BUTTON (NEW)
+        # ------------------------------------------------------------
+        self.help_button = QtWidgets.QPushButton("?")
+        self.help_button.setFixedSize(32, 32)
+        self.help_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.help_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2A2A2A;
+                border: none;
+                color: #E0E0E0;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #3A3A3A;
+            }
+        """)
+        self.help_button.clicked.connect(self.open_help_window)
+        top_bar.addWidget(self.help_button)
 
+        return top_bar
 
