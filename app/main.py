@@ -1008,22 +1008,67 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         help_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
         help_layout.addWidget(help_title)
 
-        self.help_text = QtWidgets.QTextEdit()
-        self.help_text.setReadOnly(True)
-        self.help_text.setStyleSheet(
+        # --- Three-column help layout ---
+        columns = QtWidgets.QHBoxLayout()
+        columns.setSpacing(24)
+
+        # Column 1
+        self.help_col1 = QtWidgets.QTextEdit()
+        self.help_col1.setReadOnly(False)
+        self.help_col1.setStyleSheet(
             "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
         )
-        self.help_text.setText(
-            "Welcome to NovaTurn!\n\n"
-            "This is your help page. Add instructions here."
-        )
-        help_layout.addWidget(self.help_text)
+        #--------Add your instructions for column 1 here. You can format it as needed using HTML or plain text.--------
+        self.help_col1.setHtml(
+            """
+            <h2 style="color: white;">Getting Started</h2>
 
+            <ul>
+                <li>Default password: <b>letmein</b></li>
+                <li>Change your password on first login</li>
+                <li>Never share your password with others</li>
+            </ul>
+            """
+
+)
+
+
+        columns.addWidget(self.help_col1)
+
+        # Column 2
+        self.help_col2 = QtWidgets.QTextEdit()
+        self.help_col2.setReadOnly(False)
+        self.help_col2.setStyleSheet(
+            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
+        )
+        #--------Add your instructions for column 2 here. You can format it as needed using HTML or plain text.--------
+        self.help_col2.setText(
+            "Section 2\n\n"
+            "Add more instructions here."
+        )
+        columns.addWidget(self.help_col2)
+
+        # Column 3
+        self.help_col3 = QtWidgets.QTextEdit()
+        self.help_col3.setReadOnly(False)
+        self.help_col3.setStyleSheet(
+            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
+        )
+        #--------Add your instructions for column 3 here. You can format it as needed using HTML or plain text.--------
+        self.help_col3.setText(
+            "Section 3\n\n"
+            "Add additional notes here."
+        )
+        columns.addWidget(self.help_col3)
+
+        help_layout.addLayout(columns)
         help_layout.addStretch()
+
         self.stacked.addWidget(self.page_help)
 
         # Store index for switching
         self.HELP_PAGE_INDEX = self.stacked.indexOf(self.page_help)
+
 
 
 
