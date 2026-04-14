@@ -546,7 +546,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         home_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
         home_layout.addWidget(home_title)
 
-        recent_label = QtWidgets.QLabel("Recently Played")
+        recent_label = QtWidgets.QLabel("Recently Played Or Go To Library To Login And Add Songs To Your Library Database. Then Play Your Favorate Songs And Enjoy NovaTurns Amazing Music Player Experience")
         recent_label.setStyleSheet("color: #B3B3B3; font-size: 16px;")
         home_layout.addWidget(recent_label)
 
@@ -1029,8 +1029,9 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
                 <li>Never share your password with others</li>
             </ul>
             """
+        )
 
-)
+
 
 
         columns.addWidget(self.help_col1)
