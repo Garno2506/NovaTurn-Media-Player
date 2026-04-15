@@ -1,14 +1,13 @@
 HELP_COL1 = """
-<b style="color: white; font-size: 20px;">Getting Started</b>
 
-<p>
-    First time password for login is <b>letmein</b>.
-</p>
+    <h2 style="color: white;">Getting Started</h2>
 
-<p>
-    It is highly recommended to change this password immediately after your first login.
-</p>
-"""
+    <ul>
+        <li>Default password: <b>letmein</b></li>
+        <li>Change your password after first login</li>
+        <li>Never share your password with others</li>
+    </ul>
+    """
 #----End of HELP_COL1
 HELP_COL2 = """
 <b style="color: white; font-size: 20px;">Changing Your Password</b>
