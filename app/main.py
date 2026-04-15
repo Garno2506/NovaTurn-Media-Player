@@ -1012,6 +1012,25 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         help_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
         help_layout.addWidget(help_title)
 
+        # ---------------- Search bar ----------------
+        search_row = QtWidgets.QHBoxLayout()
+        search_row.setSpacing(12)
+
+        self.help_search = QtWidgets.QLineEdit()
+        self.help_search.setPlaceholderText("Search help…")
+        self.help_search.setFixedHeight(32)
+        self.help_search.setStyleSheet(
+            "font-size: 16px; color: white; background-color: #2A2A2A; "
+            "border: 1px solid #444; border-radius: 6px;"
+        )
+        search_row.addWidget(self.help_search)
+
+        help_layout.addLayout(search_row)
+
+        # Event filter + live search
+        self.help_search.installEventFilter(self)
+        self.help_search.textChanged.connect(self.search_help_text)
+
         # --- Three-column help layout ---
         columns = QtWidgets.QHBoxLayout()
         columns.setSpacing(24)
@@ -1022,10 +1041,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.help_col1.setStyleSheet(
             "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
         )
-
         self.help_col1.setHtml(HELP_COL1)
-
-
         columns.addWidget(self.help_col1)
 
         # Column 2
@@ -1034,9 +1050,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.help_col2.setStyleSheet(
             "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
         )
-
         self.help_col2.setHtml(HELP_COL2)
-
         columns.addWidget(self.help_col2)
 
         # Column 3
@@ -1045,7 +1059,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.help_col3.setStyleSheet(
             "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
         )
-
         self.help_col3.setHtml(HELP_COL3)
         columns.addWidget(self.help_col3)
 
@@ -1056,6 +1069,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         # Store index for switching
         self.HELP_PAGE_INDEX = self.stacked.indexOf(self.page_help)
+
 
     # ============================================================
     #         MENU + SIGNAL CONNECTIONS (UPDATED + FIXED)
@@ -1166,6 +1180,59 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
+
+    def search_help_text(self):
+        text = self.help_search.text().strip()
+
+        # Reset when empty
+        if not text:
+            self.help_col1.setHtml(HELP_COL1)
+            return
+
+        # Reset text to remove old highlights
+        self.help_col1.setHtml(HELP_COL1)
+
+        doc = self.help_col1.document()
+        cursor = QtGui.QTextCursor(doc)
+
+        highlight_format = QtGui.QTextCharFormat()
+        highlight_format.setBackground(QtGui.QColor("#444444"))
+        highlight_format.setForeground(QtGui.QColor("yellow"))
+
+        # Highlight all whole-word matches
+        while True:
+            cursor = doc.find(text, cursor, QtGui.QTextDocument.FindWholeWords)
+            if cursor.isNull():
+                break
+            cursor.mergeCharFormat(highlight_format)
+
+        # Move to first match
+        first = doc.find(text, QtGui.QTextCursor.Start, QtGui.QTextDocument.FindWholeWords)
+        if not first.isNull():
+            self.help_col1.setTextCursor(first)
+
+    def jump_to_next_help_match(self):
+        text = self.help_search.text().strip()
+        if not text:
+            return
+
+        doc = self.help_col1.document()
+        cursor = self.help_col1.textCursor()
+
+        # Find next whole-word match
+        next_match = doc.find(text, cursor, QtGui.QTextDocument.FindWholeWords)
+        if not next_match.isNull():
+            self.help_col1.setTextCursor(next_match)
+            return
+
+        # Wrap to first match
+        first = doc.find(text, QtGui.QTextCursor.Start, QtGui.QTextDocument.FindWholeWords)
+        if not first.isNull():
+            self.help_col1.setTextCursor(first)
+
+
+
+
 
     # ------------------------------------------------------------
     # ADMIN-ONLY LIBRARY MENU
@@ -2258,10 +2325,35 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # ------------------------------------------------------------
         # PHYSICAL KEYBOARD ENTER HANDLING (YOUTUBE + LIBRARY)
         # ------------------------------------------------------------
+
         if event.type() == QtCore.QEvent.KeyPress and event.key() in (
             QtCore.Qt.Key_Return,
             QtCore.Qt.Key_Enter,
         ):
+
+            # Help Search Enter → jump to next match
+            if obj is self.help_search:
+                self.jump_to_next_help_match()
+                return True
+
+            # Library search Enter
+            if self._kb_target is self.search_edit:
+                self.search_edit.clear()
+                self._hide_keyboard()
+                return True
+
+            # YouTube search Enter
+            if self._kb_target is self.youtube_search:
+                text = self.youtube_search.text()
+                self._hide_keyboard()
+
+                if text.strip():
+                    self.on_youtube_search_clicked()
+
+                self.youtube_search.clear()
+                self.youtube_search.clearFocus()
+
+                return True
 
             # Library search Enter
             if self._kb_target is self.search_edit:
@@ -2282,6 +2374,17 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
                 self.youtube_search.clearFocus()
 
                 return True
+
+        # ------------------------------------------------------------
+        # HELP SEARCH ENTER → jump to next match
+        # ------------------------------------------------------------
+        if obj is self.help_search and event.type() == QtCore.QEvent.KeyPress:
+            if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+                self.jump_to_next_help_match()
+                return True
+
+
+
 
         # ------------------------------------------------------------
         # OSK OPENS OSK WHEN SEARCH LIBRARY GETS FOCUS
