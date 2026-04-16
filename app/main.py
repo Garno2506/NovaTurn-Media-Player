@@ -2426,6 +2426,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
                 col.setTextCursor(first)
                 return
 
+
     # ------------------------------------------------------------
     # EVENT FILTER (HELP SEARCH, OSK, YOUTUBE, SLIDER PREVIEW)
     # ------------------------------------------------------------
