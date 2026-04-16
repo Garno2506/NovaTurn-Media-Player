@@ -450,6 +450,26 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # Help search
         self.help_search.textChanged.connect(self._help_search_update)
         self.help_search.returnPressed.connect(self._help_search_next)
+                # Clear highlights when switching columns
+        # When switching columns, clear ALL highlights and re-run search only on the active column
+        def _help_column_changed():
+            # Clear highlights in all columns
+            for editor in (self.help_col1, self.help_col2, self.help_col3):
+                cursor = editor.textCursor()
+                cursor.beginEditBlock()
+                fmt = QtGui.QTextCharFormat()
+                fmt.setBackground(QtCore.Qt.transparent)
+                cursor.select(QtGui.QTextCursor.Document)
+                cursor.setCharFormat(fmt)
+                cursor.endEditBlock()
+
+            # Re-run search on the newly selected column
+            self._help_search_update(self.help_search.text())
+
+        self.rb_col1.toggled.connect(_help_column_changed)
+        self.rb_col2.toggled.connect(_help_column_changed)
+        self.rb_col3.toggled.connect(_help_column_changed)
+
 
     # ------------------------------------------------------------
     # Attach VLC events
