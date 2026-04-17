@@ -344,9 +344,6 @@ class NovaTurnSplash(QSplashScreen):
                 cb()
             return
 
-
-
-
 # ============================================================
 #   MEDIAPLAYER INIT + GLOBAL PATCHES (UPDATED)
 # ============================================================
@@ -450,6 +447,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # Help search
         self.help_search.textChanged.connect(self._help_search_update)
         self.help_search.returnPressed.connect(self._help_search_next)
+        self.help_clear_btn.clicked.connect(self._help_clear_search)
+
                 # Clear highlights when switching columns
         # When switching columns, clear ALL highlights and re-run search only on the active column
         def _help_column_changed():
@@ -475,11 +474,37 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             active.ensureCursorVisible()
             self.help_search.setFocus()
 
-
         self.rb_col1.toggled.connect(_help_column_changed)
         self.rb_col2.toggled.connect(_help_column_changed)
         self.rb_col3.toggled.connect(_help_column_changed)
 
+    def _help_clear_search(self):
+        # Clear search bar
+        self.help_search.clear()
+
+        # Clear highlights in all columns
+        for editor in (self.help_col1, self.help_col2, self.help_col3):
+            cursor = editor.textCursor()
+            cursor.beginEditBlock()
+
+            # Remove background formatting
+            fmt = QtGui.QTextCharFormat()
+            fmt.setBackground(QtCore.Qt.transparent)
+            cursor.select(QtGui.QTextCursor.Document)
+            cursor.setCharFormat(fmt)
+
+            cursor.endEditBlock()
+
+            # Clear active selection
+            cursor.clearSelection()
+            editor.setTextCursor(cursor)
+
+        # Reset match state
+        self._help_matches = []
+        self._help_match_index = -1
+
+        # Keep focus on search bar
+        self.help_search.setFocus()
 
     # ------------------------------------------------------------
     # Attach VLC events
@@ -570,7 +595,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # ---------------- Stacked pages ----------------
         self.stacked = QtWidgets.QStackedWidget()
         root.addWidget(self.stacked, 1)
-
 
         # ---------------- Home page ----------------
         self.page_home = QtWidgets.QWidget()
@@ -959,8 +983,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         #  CHUNK C ALL OSK RELATED CODE
         # ============================================================
 
-        # ------------- OSK MINI KEYBOARD (FLOATING) THIS CANNOT BE MOVED----------------
-        #-------------- ALL OTHER RELATED OSK FEATURES LINES 1798 TO 1921 UNLES MORE CODE ADDED----------
+        # ---- OSK MINI KEYBOARD (FLOATING) THIS CANNOT BE MOVED--------------------------------
+        #----- ALL OTHER RELATED OSK FEATURES LINES 1798 TO 1921 UNLES MORE CODE ADDED----------
         self.keyboard = MiniKeyboard(self.page_library)
         self.keyboard.setFixedHeight(260)   # NEW — ensures keyboard is visible
         self.keyboard.setFixedWidth(self.page_library.width())
@@ -970,7 +994,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.keyboard.raise_()
         self.keyboard.keyPressed.connect(self._handle_virtual_key)
 
-        # ---------------- Now Playing page ----------------
+        # ---------- Now Playing page ----------------
         self.page_now_playing = QtWidgets.QWidget()
         np_layout = QtWidgets.QVBoxLayout(self.page_now_playing)
         np_layout.setContentsMargins(40, 40, 40, 40)
@@ -997,7 +1021,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         np_layout.addStretch()
         self.stacked.addWidget(self.page_now_playing)
 
-        # ---------------- Statistics page ----------------
+        # ---------- Statistics page ----------------
         self.page_stats = QtWidgets.QWidget()
         stats_layout = QtWidgets.QHBoxLayout(self.page_stats)
         stats_layout.setContentsMargins(40, 40, 40, 40)
@@ -1034,7 +1058,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         self.stacked.addWidget(self.page_stats)
 
-        # ---------------- Help page ----------------
+        # ---------- Help page ----------------
         #--------------------------------------------
         self.page_help = QtWidgets.QWidget()
         help_layout = QtWidgets.QVBoxLayout(self.page_help)
@@ -1045,11 +1069,11 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         help_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
         help_layout.addWidget(help_title)
 
-                # --- Help Search Controls (3 radio buttons + search bar) ---
+        # --- Help Search Controls (3 radio buttons + search bar) ---
         search_controls = QtWidgets.QHBoxLayout()
         search_controls.setSpacing(20)
 
-        # Radio buttons for selecting which column to search
+        # Clear button on the FAR LEFT
         self.rb_col1 = QtWidgets.QRadioButton("Search Column 1")
         self.rb_col2 = QtWidgets.QRadioButton("Search Column 2")
         self.rb_col3 = QtWidgets.QRadioButton("Search Column 3")
@@ -1059,7 +1083,12 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         search_controls.addWidget(self.rb_col2)
         search_controls.addWidget(self.rb_col3)
 
-        # Search bar
+        # Clear button BEFORE the search bar
+        self.help_clear_btn = QtWidgets.QPushButton("Clear")
+        self.help_clear_btn.setFixedHeight(32)
+        search_controls.addWidget(self.help_clear_btn)
+
+        # Search bar expands to fill remaining space
         self.help_search = QtWidgets.QLineEdit()
         self.help_search.setPlaceholderText("Search help text… (Enter = next match)")
         self.help_search.setFixedHeight(32)
@@ -1070,7 +1099,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # Internal state for search navigation
         self._help_matches = []
         self._help_match_index = -1
-
 
         # --- Three-column help layout ---
         columns = QtWidgets.QHBoxLayout()
@@ -1084,8 +1112,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         )
 
         self.help_col1.setHtml(HELP_COL1)
-
-
         columns.addWidget(self.help_col1)
 
         # Column 2
@@ -1333,9 +1359,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             self._help_match_index = 0
 
         self._help_jump_to_match()
-
-
-
 
     # ------------------------------------------------------------
     # Context menu for library list
@@ -2173,7 +2196,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.warning(self, "Import Error", f"Could not import library:\n{e}")
 
-
     # ============================================================
     #  CHUNK F STATISTICS PAGE + NAVIGATION + MAIN()
     # ============================================================
@@ -2401,7 +2423,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # Switch page normally
         self.stacked.setCurrentIndex(index)
 
-
     # ------------------------------------------------------------
     # OSK EVENT FILTER (SLIDER PREVIEW + OSK + YOUTUBE HOVER + ENTER)
     # ------------------------------------------------------------
@@ -2437,8 +2458,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             # Allow Help Page search bar to handle Enter normally
             if obj is self.help_search:
                 return False
-
-
 
             # Library search Enter
             if self._kb_target is self.search_edit:
