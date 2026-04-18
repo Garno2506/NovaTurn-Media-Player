@@ -2534,6 +2534,12 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         if obj is None:
             return False
 
+        # --- IMPORTANT ---
+        # Allow Help Page search bar to receive all events (needed for Windows OSK)
+        if obj is self.help_search:
+            return False
+
+
         # ------------------------------------------------------------
         # OSK OPENS WHEN YOUTUBE SEARCH GETS FOCUS
         # ------------------------------------------------------------
