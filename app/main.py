@@ -1,4 +1,3 @@
-from cProfile import label
 import sys
 import os
 import random
@@ -93,11 +92,9 @@ from app.ui.osk import MiniKeyboard
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QSplashScreen, QLabel
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtCore import QTimer, QPropertyAnimation, QEasingCurve, QPoint, Qt
+from PyQt5.QtCore import QTimer, QPropertyAnimation, QEasingCurve, QPoint
 from app.ui.osk_final import MiniKeyboard
-from app.help_text import HELP_COL1
-from app.help_text import HELP_COL2
-from app.help_text import HELP_COL3
+
 
 # ------------------------------------------------------------
 # Pill-style delegate for "All Artists"
@@ -345,32 +342,6 @@ class NovaTurnSplash(QSplashScreen):
             return
 
 
-class SingleLineTextEdit(QtWidgets.QTextEdit):
-    returnPressed = QtCore.pyqtSignal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAcceptRichText(False)
-        self.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setFixedHeight(32)
-
-    def keyPressEvent(self, event):
-        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
-            self.returnPressed.emit()
-            return
-        super().keyPressEvent(event)
-
-    def text(self):
-        return self.toPlainText()
-
-    def setText(self, value):
-        self.setPlainText(value)
-
-    def insertFromMimeData(self, source):
-        text = source.text().replace("\n", "")
-        self.insertPlainText(text)
 
 
 # ============================================================
@@ -473,115 +444,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
-        # Help search
-        self.help_search.textChanged.connect(self._help_search_update)
-        self.help_search.returnPressed.connect(self._help_search_next)
-        self.help_clear_btn.clicked.connect(self._help_clear_search)
-
-                # Clear highlights when switching columns
-        # When switching columns, clear ALL highlights and re-run search only on the active column
-        def _help_column_changed():
-        # NEW: Update match counter after switching columns (delayed so matches are ready)
-                    # Delay position update until matches are rebuilt
-            QtCore.QTimer.singleShot(0, self._help_update_match_position)
-
-            # Clear green highlights in all columns
-            for editor in (self.help_col1, self.help_col2, self.help_col3):
-                cursor = editor.textCursor()
-                cursor.beginEditBlock()
-                fmt = QtGui.QTextCharFormat()
-                fmt.setBackground(QtCore.Qt.transparent)
-                cursor.select(QtGui.QTextCursor.Document)
-                cursor.setCharFormat(fmt)
-                cursor.endEditBlock()
-
-            # Re-run search on the newly selected column
-            self._help_search_update(self.help_search.text())
-
-            # CRITICAL FIX:
-            # Reactivate the cursor so Enter works again
-            active = self._help_get_active_editor()
-            cursor = active.textCursor()
-            cursor.setPosition(0)
-            active.setTextCursor(cursor)
-            active.ensureCursorVisible()
-            self.help_search.setFocus()
-
-        # NEW: Update match counter after switching columns
-        count = len(self._help_matches)
-        if count == 0:
-            self.help_match_label.setText("No matches found")
-        elif count == 1:
-            self.help_match_label.setText("1 match found")
-        else:
-            self.help_match_label.setText(f"{count} matches found")
-
-
-        self.rb_col1.toggled.connect(_help_column_changed)
-        self.rb_col2.toggled.connect(_help_column_changed)
-        self.rb_col3.toggled.connect(_help_column_changed)
-
-    def _help_clear_search(self):
-        # Clear search bar
-        self.help_search.clear()
-
-        # Clear highlights in all columns
-        for editor in (self.help_col1, self.help_col2, self.help_col3):
-            cursor = editor.textCursor()
-            cursor.beginEditBlock()
-
-            # Remove background formatting
-            fmt = QtGui.QTextCharFormat()
-            fmt.setBackground(QtCore.Qt.transparent)
-            cursor.select(QtGui.QTextCursor.Document)
-            cursor.setCharFormat(fmt)
-
-            cursor.endEditBlock()
-
-            # Clear active selection
-            cursor.clearSelection()
-            editor.setTextCursor(cursor)
-
-            # NEW: scroll to top
-            editor.verticalScrollBar().setValue(0)
-
-        # Reset match state
-        self._help_matches = []
-        self._help_match_index = -1
-        self.help_position_label.setText("")
-
-        # Reset match counter
-        self.help_match_label.setText("")
-
-        # Keep focus on search bar
-        self.help_search.setFocus()
-    def _help_update_match_counter(self):
-        count = len(self._help_matches)
-        if count == 0:
-            self.help_match_label.setText("No matches found")
-        elif count == 1:
-            self.help_match_label.setText("1 match found")
-        else:
-            self.help_match_label.setText(f"{count} matches found")
-
-    def _help_update_match_position(self):
-        if self._help_matches:
-            # Always show first match when switching columns
-            self._help_match_index = 0
-            pos = 1
-            total = len(self._help_matches)
-            self.help_position_label.setText(f"Match {pos} of {total}")
-        else:
-            self.help_position_label.setText("")
-            self.help_position_label.setText("")
-
-    def open_windows_osk(self):
-        import subprocess
-        try:
-            subprocess.Popen(r"C:\Program Files\Common Files\Microsoft Shared\ink\TabTip.exe")
-        except Exception:
-            pass
-
 
     # ------------------------------------------------------------
     # Attach VLC events
@@ -683,7 +545,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         home_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
         home_layout.addWidget(home_title)
 
-        recent_label = QtWidgets.QLabel("Recently Played Or Go To Library To Login And Add Songs To Your Library Database. Then Play Your Favorate Songs And Enjoy NovaTurns Amazing Music Player Experience")
+        recent_label = QtWidgets.QLabel("Recently Played")
         recent_label.setStyleSheet("color: #B3B3B3; font-size: 16px;")
         home_layout.addWidget(recent_label)
 
@@ -838,30 +700,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.login_button = QtWidgets.QPushButton("Login")
         self.login_button.setFixedHeight(34)
         top_bar.addWidget(self.login_button)
-
-        # Help button
-        self.help_button = QtWidgets.QPushButton("?")
-        self.help_button.setFixedSize(32, 32)
-        self.help_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.help_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2A2A2A;
-                border: none;
-                color: #E0E0E0;
-                font-size: 18px;
-                font-weight: bold;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #3A3A3A;
-            }
-        """)
-        top_bar.addWidget(self.help_button)
-
-        # Switch to Help Page
-        self.help_button.clicked.connect(
-            lambda: self.stacked.setCurrentIndex(self.HELP_PAGE_INDEX)
-        )
 
         # ---------------- MIDDLE LAYOUT + SPLITTER ----------------
         middle_layout = QtWidgets.QHBoxLayout()
@@ -1060,8 +898,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         #  CHUNK C ALL OSK RELATED CODE
         # ============================================================
 
-        # ---- OSK MINI KEYBOARD (FLOATING) THIS CANNOT BE MOVED--------------------------------
-        #----- ALL OTHER RELATED OSK FEATURES LINES 1798 TO 1921 UNLES MORE CODE ADDED----------
+        # ------------- OSK MINI KEYBOARD (FLOATING) THIS CANNOT BE MOVED----------------
+        #-------------- ALL OTHER RELATED OSK FEATURES LINES 1798 TO 1921 UNLES MORE CODE ADDED----------
         self.keyboard = MiniKeyboard(self.page_library)
         self.keyboard.setFixedHeight(260)   # NEW — ensures keyboard is visible
         self.keyboard.setFixedWidth(self.page_library.width())
@@ -1071,7 +909,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.keyboard.raise_()
         self.keyboard.keyPressed.connect(self._handle_virtual_key)
 
-        # ---------- Now Playing page ----------------
+        # ---------------- Now Playing page ----------------
         self.page_now_playing = QtWidgets.QWidget()
         np_layout = QtWidgets.QVBoxLayout(self.page_now_playing)
         np_layout.setContentsMargins(40, 40, 40, 40)
@@ -1098,7 +936,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         np_layout.addStretch()
         self.stacked.addWidget(self.page_now_playing)
 
-        # ---------- Statistics page ----------------
+        # ---------------- Statistics page ----------------
         self.page_stats = QtWidgets.QWidget()
         stats_layout = QtWidgets.QHBoxLayout(self.page_stats)
         stats_layout.setContentsMargins(40, 40, 40, 40)
@@ -1134,108 +972,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.stats_right.addStretch()
 
         self.stacked.addWidget(self.page_stats)
-
-        # ---------- Help page ----------------
-        #--------------------------------------------
-        self.page_help = QtWidgets.QWidget()
-        help_layout = QtWidgets.QVBoxLayout(self.page_help)
-        help_layout.setContentsMargins(32, 32, 32, 32)
-        help_layout.setSpacing(24)
-
-        help_title = QtWidgets.QLabel("Help & Instructions")
-        help_title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
-        help_layout.addWidget(help_title)
-
-        # --- Help Search Controls (3 radio buttons + search bar) ---
-        search_controls = QtWidgets.QHBoxLayout()
-        search_controls.setSpacing(20)
-
-        # Clear button on the FAR LEFT
-        self.rb_col1 = QtWidgets.QRadioButton("Search Column 1")
-        self.rb_col2 = QtWidgets.QRadioButton("Search Column 2")
-        self.rb_col3 = QtWidgets.QRadioButton("Search Column 3")
-        self.rb_col1.setChecked(True)
-
-        search_controls.addWidget(self.rb_col1)
-        search_controls.addWidget(self.rb_col2)
-        search_controls.addWidget(self.rb_col3)
-
-        # Clear button BEFORE the search bar
-        self.help_clear_btn = QtWidgets.QPushButton("Clear")
-        self.help_clear_btn.setFixedHeight(32)
-        search_controls.addWidget(self.help_clear_btn)
-
-        # Search bar expands to fill remaining space
-        self.help_search = SingleLineTextEdit()
-        self.help_search = QtWidgets.QLineEdit()
-
-        self.help_search.setPlaceholderText("Search help text… (Enter = next match)")
-        self.help_search.setFixedHeight(32)
-        search_controls.addWidget(self.help_search, 1)
-        self.help_search.textChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.open_windows_osk))
-
-        help_layout.addLayout(search_controls)
-
-
-        # Match counter label
-                # NEW: Update match counter after switching columns (delayed so matches are ready)
-        self.help_match_label = QtWidgets.QLabel("")
-        self.help_match_label.setStyleSheet("color: #888; font-size: 12px;")
-        help_layout.addWidget(self.help_match_label)
-
-        self.help_position_label = QtWidgets.QLabel("")
-        self.help_position_label.setStyleSheet("color: #888; font-size: 12px;")
-        help_layout.addWidget(self.help_position_label)
-
-
-
-
-        # Internal state for search navigation
-        self._help_matches = []
-        self._help_match_index = -1
-
-        # --- Three-column help layout ---
-        columns = QtWidgets.QHBoxLayout()
-        columns.setSpacing(24)
-
-        # Column 1
-        self.help_col1 = QtWidgets.QTextEdit()
-        self.help_col1.setReadOnly(True)
-        self.help_col1.setStyleSheet(
-            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
-        )
-
-        self.help_col1.setHtml(HELP_COL1)
-        columns.addWidget(self.help_col1)
-
-        # Column 2
-        self.help_col2 = QtWidgets.QTextEdit()
-        self.help_col2.setReadOnly(True)
-        self.help_col2.setStyleSheet(
-            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
-        )
-
-        self.help_col2.setHtml(HELP_COL2)
-
-        columns.addWidget(self.help_col2)
-
-        # Column 3
-        self.help_col3 = QtWidgets.QTextEdit()
-        self.help_col3.setReadOnly(True)
-        self.help_col3.setStyleSheet(
-            "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
-        )
-
-        self.help_col3.setHtml(HELP_COL3)
-        columns.addWidget(self.help_col3)
-
-        help_layout.addLayout(columns)
-        help_layout.addStretch()
-
-        self.stacked.addWidget(self.page_help)
-
-        # Store index for switching
-        self.HELP_PAGE_INDEX = self.stacked.indexOf(self.page_help)
 
     # ============================================================
     #         MENU + SIGNAL CONNECTIONS (UPDATED + FIXED)
@@ -1373,106 +1109,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             # When search is cleared, also clear artist filter
             self.current_artist_filter = None
         self._load_library()
-
-    # ============================================================
-    # HELP PAGE SEARCH + HIGHLIGHT ENGINE
-    # ============================================================
-
-    def _help_get_active_editor(self):
-        if self.rb_col1.isChecked():
-            return self.help_col1
-        if self.rb_col2.isChecked():
-            return self.help_col2
-        return self.help_col3
-
-    def _help_search_update(self, text):
-        editor = self._help_get_active_editor()
-
-        # Clear previous highlights
-        cursor = editor.textCursor()
-        cursor.beginEditBlock()
-        fmt = QtGui.QTextCharFormat()
-        fmt.setBackground(QtCore.Qt.transparent)
-        cursor.select(QtGui.QTextCursor.Document)
-        cursor.setCharFormat(fmt)
-        cursor.endEditBlock()
-
-        self._help_matches = []
-        self._help_match_index = -1
-
-        if not text.strip():
-            return
-
-        # Full-word search
-        doc = editor.document()
-        highlight_fmt = QtGui.QTextCharFormat()
-        highlight_fmt.setBackground(QtGui.QColor("#1DB954"))
-        highlight_fmt.setForeground(QtGui.QColor("black"))
-
-        cursor = QtGui.QTextCursor(doc)
-        pattern = r"\b" + text.strip() + r"\b"
-        regex = QtCore.QRegExp(pattern, QtCore.Qt.CaseInsensitive)
-
-        pos = 0
-        while True:
-            pos = regex.indexIn(editor.toPlainText(), pos)
-            if pos == -1:
-                break
-
-            cursor.setPosition(pos)
-            cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, len(text))
-            cursor.mergeCharFormat(highlight_fmt)
-
-            self._help_matches.append(pos)
-            pos += len(text)
-
-        if self._help_matches:
-            self._help_match_index = 0
-            self._help_jump_to_match()
-
-    def _help_jump_to_match(self):
-        if not self._help_matches:
-            return
-
-        editor = self._help_get_active_editor()
-        pos = self._help_matches[self._help_match_index]
-
-        cursor = editor.textCursor()
-        cursor.setPosition(pos)
-        cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor,
-                            len(self.help_search.text()))
-        editor.setTextCursor(cursor)
-        editor.ensureCursorVisible()
-
-    def _help_search_next(self):
-        if not self._help_matches:
-            return
-
-        self._help_match_index += 1
-        if self._help_match_index >= len(self._help_matches):
-            self._help_match_index = 0
-
-        self._help_jump_to_match()
-
-
-                # Update match counter
-        count = len(self._help_matches)
-        if count == 0:
-            self.help_match_label.setText("No matches found")
-        elif count == 1:
-            self.help_match_label.setText("1 match found")
-        else:
-            self.help_match_label.setText(f"{count} matches found")
-
-        # Update "Match X of Y"
-        if self._help_matches:
-            pos = self._help_match_index + 1
-            total = len(self._help_matches)
-            self.help_position_label.setText(f"Match {pos} of {total}")
-        else:
-            self.help_position_label.setText("")
-
-
 
     # ------------------------------------------------------------
     # Context menu for library list
@@ -2310,6 +1946,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.warning(self, "Import Error", f"Could not import library:\n{e}")
 
+
     # ============================================================
     #  CHUNK F STATISTICS PAGE + NAVIGATION + MAIN()
     # ============================================================
@@ -2508,38 +2145,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
     # NAVIGATION HELPER
     # ------------------------------------------------------------
     def set_page(self, index: int):
-
-        # If leaving the Help page, clear highlights + reset search
-        if hasattr(self, "help_search") and self.stacked.currentIndex() == self.HELP_PAGE_INDEX:
-            self.help_search.clear()
-
-            # Clear highlights AND clear active selection in all columns
-            for editor in (self.help_col1, self.help_col2, self.help_col3):
-                cursor = editor.textCursor()
-                cursor.beginEditBlock()
-
-                fmt = QtGui.QTextCharFormat()
-                fmt.setBackground(QtCore.Qt.transparent)
-                cursor.select(QtGui.QTextCursor.Document)
-                cursor.setCharFormat(fmt)
-
-                cursor.endEditBlock()
-
-                cursor.clearSelection()
-                editor.setTextCursor(cursor)
-
-                # NEW: scroll to top
-                editor.verticalScrollBar().setValue(0)
-
-            # Reset match state
-            self._help_matches = []
-            self._help_match_index = -1
-            self.help_match_label.setText("")
-            self.help_position_label.setText("")
-
-        # Switch page normally
         self.stacked.setCurrentIndex(index)
-
 
     # ------------------------------------------------------------
     # OSK EVENT FILTER (SLIDER PREVIEW + OSK + YOUTUBE HOVER + ENTER)
@@ -2572,10 +2178,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             QtCore.Qt.Key_Return,
             QtCore.Qt.Key_Enter,
         ):
-
-            # Allow Help Page search bar to handle Enter normally
-            if obj is self.help_search:
-                return False
 
             # Library search Enter
             if self._kb_target is self.search_edit:
