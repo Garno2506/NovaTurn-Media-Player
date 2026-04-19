@@ -344,6 +344,65 @@ class NovaTurnSplash(QSplashScreen):
                 cb()
             return
 
+class SingleLineTextEdit(QtWidgets.QTextEdit):
+    returnPressed = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptRichText(False)
+        self.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setFixedHeight(32)
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            self.returnPressed.emit()
+            return
+        super().keyPressEvent(event)
+
+    def text(self):
+        return self.toPlainText()
+
+    def setText(self, value):
+        self.setPlainText(value)
+
+    def insertFromMimeData(self, source):
+        # Prevent multi-line paste
+        text = source.text().replace("\n", "")
+        self.insertPlainText(text)
+
+
+class SingleLineTextEdit(QtWidgets.QTextEdit):
+    returnPressed = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptRichText(False)
+        self.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setFixedHeight(32)
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            self.returnPressed.emit()
+            return
+        super().keyPressEvent(event)
+
+    def text(self):
+        return self.toPlainText()
+
+    def setText(self, value):
+        self.setPlainText(value)
+
+    def insertFromMimeData(self, source):
+        # Prevent multi-line paste
+        text = source.text().replace("\n", "")
+        self.insertPlainText(text)
+
+
+
 # ============================================================
 #   MEDIAPLAYER INIT + GLOBAL PATCHES (UPDATED)
 # ============================================================
@@ -444,11 +503,15 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
+
         # Help search
         self.help_search.textChanged.connect(self._help_search_update)
         self.help_search.returnPressed.connect(self._help_search_next)
         self.help_clear_btn.clicked.connect(self._help_clear_search)
         self.help_search.focusInEvent = self.help_search_focus_in
+
+
+
 
     def help_search_focus_in(self, event):
         import subprocess
@@ -1151,7 +1214,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         search_controls.addWidget(self.help_clear_btn)
 
         # Search bar expands to fill remaining space
-        self.help_search = QtWidgets.QLineEdit()
+        self.help_search = SingleLineTextEdit()
+
         self.help_search.setPlaceholderText("Search help text… (Enter = next match)")
         self.help_search.setFixedHeight(32)
 
