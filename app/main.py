@@ -575,6 +575,12 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             self.help_position_label.setText("")
             self.help_position_label.setText("")
 
+    def open_windows_osk(self):
+        import subprocess
+        try:
+            subprocess.Popen(r"C:\Program Files\Common Files\Microsoft Shared\ink\TabTip.exe")
+        except Exception:
+            pass
 
 
     # ------------------------------------------------------------
@@ -1166,6 +1172,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.help_search.setPlaceholderText("Search help text… (Enter = next match)")
         self.help_search.setFixedHeight(32)
         search_controls.addWidget(self.help_search, 1)
+        self.help_search.textChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.open_windows_osk))
 
         help_layout.addLayout(search_controls)
 
