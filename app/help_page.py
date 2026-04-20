@@ -2,7 +2,6 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from app.help_text import HELP_COL1, HELP_COL2, HELP_COL3
 
-
 # ---------------------------------------------------------
 # Custom QLineEdit (OSK-friendly)
 # ---------------------------------------------------------
@@ -37,9 +36,6 @@ class OSKLineEdit(QtWidgets.QLineEdit):
             ctypes.windll.user32.PostMessageW(HWND, 0x0501, 0, 0)
         except Exception:
             pass
-
-
-
 
 class HelpPage(QtWidgets.QWidget):
     def __init__(self, parent=None):
