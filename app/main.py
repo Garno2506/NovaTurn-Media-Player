@@ -417,13 +417,15 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         # Build UI first
         self._build_ui()
+        self._build_help_page()   # ✔ ADD THIS
         self._apply_stylesheet()
         self._create_protected_menu()
+
+
 
         # Load data AFTER UI exists
         self._load_library()
         self._load_recently_played()
-
         # VLC events
         # DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
         self._attach_vlc_events()
@@ -444,6 +446,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
+
 
     # ------------------------------------------------------------
     # Attach VLC events
@@ -700,6 +703,32 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.login_button = QtWidgets.QPushButton("Login")
         self.login_button.setFixedHeight(34)
         top_bar.addWidget(self.login_button)
+
+
+                # Help button
+        self.help_button = QtWidgets.QPushButton("?")
+        self.help_button.setFixedSize(32, 32)
+        self.help_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.help_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2A2A2A;
+                border: none;
+                color: #E0E0E0;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #3A3A3A;
+            }
+        """)
+        top_bar.addWidget(self.help_button)
+
+        # Switch to Help Page
+        self.help_button.clicked.connect(
+            lambda: self.stacked.setCurrentIndex(self.HELP_PAGE_INDEX)
+        )
+
 
         # ---------------- MIDDLE LAYOUT + SPLITTER ----------------
         middle_layout = QtWidgets.QHBoxLayout()
@@ -973,6 +1002,25 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         self.stacked.addWidget(self.page_stats)
 
+
+    # ============================================================
+    #         Help page Code
+    # ============================================================
+    def _build_help_page(self):
+        from app.help_page import HelpPage
+
+        self.page_help = HelpPage()
+        self.stacked.addWidget(self.page_help)
+        self.HELP_PAGE_INDEX = self.stacked.indexOf(self.page_help)
+
+
+
+
+
+
+
+
+
     # ============================================================
     #         MENU + SIGNAL CONNECTIONS (UPDATED + FIXED)
     # ============================================================
@@ -1010,6 +1058,10 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.act_edit_metadata = act_edit_metadata
         self.act_change_password = act_change_password
 
+
+
+
+
     def _connect_signals(self):
         """Connects all UI signals."""
 
@@ -1038,6 +1090,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         # Login
         self.login_button.clicked.connect(self._open_login_dialog)
+
 
         # Library interactions
         self.library_list.cellDoubleClicked.connect(self.on_library_double_click)
@@ -1082,6 +1135,8 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
+
+
 
     # ------------------------------------------------------------
     # ADMIN-ONLY LIBRARY MENU
@@ -1583,6 +1638,10 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         if rows:
             media_id = random.choice([r[0] for r in rows])
             self.play_media_id(media_id)
+
+
+
+
 
     # ------------------------------------------------------------
     # EQUALIZER (volume-reactive)
@@ -2146,6 +2205,17 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
     # ------------------------------------------------------------
     def set_page(self, index: int):
         self.stacked.setCurrentIndex(index)
+
+
+
+    def set_page(self, index):
+        # If leaving Help page → reset it
+        if hasattr(self, "page_help") and self.stacked.currentIndex() == self.HELP_PAGE_INDEX:
+            self.page_help.reset_page()
+
+        self.stacked.setCurrentIndex(index)
+
+
 
     # ------------------------------------------------------------
     # OSK EVENT FILTER (SLIDER PREVIEW + OSK + YOUTUBE HOVER + ENTER)
