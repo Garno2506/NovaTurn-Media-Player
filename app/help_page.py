@@ -70,7 +70,7 @@ class HelpPage(QtWidgets.QWidget):
         help_layout.addWidget(help_title)
 
         # -----------------------------
-        # Search controls row
+        # Search controls row (radios + clear)
         # -----------------------------
         search_controls = QtWidgets.QHBoxLayout()
         search_controls.setSpacing(20)
@@ -89,17 +89,26 @@ class HelpPage(QtWidgets.QWidget):
         search_controls.addWidget(self.rb_col2)
         search_controls.addWidget(self.rb_col3)
 
-        # Clear button BEFORE search bar
+        # Clear button
         self.help_clear_btn = QtWidgets.QPushButton("Clear")
         self.help_clear_btn.setFixedHeight(32)
         search_controls.addWidget(self.help_clear_btn)
 
-        # OSK-friendly search bar
+        # Add the controls row to the layout
+        help_layout.addLayout(search_controls)
+
+        # -----------------------------
+        # Search bar row (search bar alone)
+        # -----------------------------
+        search_bar_row = QtWidgets.QHBoxLayout()
+        search_bar_row.setSpacing(20)
+
         self.help_search = OSKLineEdit()
         self.help_search.setPlaceholderText("Search help text… (Enter = next match)")
-        search_controls.addWidget(self.help_search, 1)
+        search_bar_row.addWidget(self.help_search)
 
-        help_layout.addLayout(search_controls)
+        # Add the search bar row to the layout
+        help_layout.addLayout(search_bar_row)
 
         # -----------------------------
         # Match labels
