@@ -116,9 +116,84 @@ HELP_COL3 = """
 
 
 
+    <h2 style="color: white;">Getting Started</h2>
+
+    <ul>
+        <li>Default password: <b>letmein</b></li>
+        <li>Change your password after first login</li>
+        <li>To change your password, login first then go to the library menu and select "Change Password".</li>
+        <li>Never share your password with others if you want to keep it secure</li>
+        <li>Now navigate to the library button where you will find a host of media options. Note: The library menu is a protected area and can only be accessed while logged in. This it to save any unaurthorized access and deletion of any media files whils't in party mode</li>
+    </ul>
 
 
 
-"""
-#------------------End of HELP_COL3--------------------------------------------
+    <h3 style="color: white;"> Adding Media To Your Library</h3>
+
+    <ul>
+    <li>You must be logged in to add media to your library</li>
+        <li>Media format files supported (*.mp3 *.wav *.flac *.mp4 *.mkv *.avi *.mov *.wmv *.flv *.webm)</li>
+        <li>This will open your file explorer</li>
+        <li>Click where you keep your media files and open the folder where they are stored on your computer</li>
+        <li>You can add multiple files at once by holding down the up arrow key on your keyboard while selecting them then click on open on your file explorer page. This will add all selected files to your media library database.</li>
+        <li>Note: The file explorer may take a moment to load the media files if you load too many files at once, it may cause the application to show as not responding just let it keep loading until the files are loaded and the system responds this is only a windows quirky behavior. We recommend adding arround 0-15 full album cd's or upto 100 single tracks at a time for better performance</li>
+        </ul>
+
+
+
+    <h3 style="color: white;">Deleting Media From Your Library</h3>
+
+    <ul>
+        <li>Note: Deleting media from your library will not delete the actual media files from your computer, it will only remove them from the media library database so you are perfectly safe to do so</li>
+        <li>You must be logged in to delete media from your library</li>
+        <li>You can delete media from your library in two ways:</li>
+        <li>1st way: Click your mouse on the media item you want to delete from the Title, Artist, Album column if using a touch screen just touch on the item until it changes to green then head to the library dropdown menu where the context menu appears, then select "Delete selected items" you will be prompted to confirm the deletion just click "Yes".</li>
+        <li>2nd way head over to the library dropdown menu and select delete all media then the context box will appear asking you to confirm. Be very cautious when selecting this option as it will delete all media from your library. This is why you must be logged in to use this feature so no unauthorized deletions can occur if you have guest arround.</li>
+    </ul>
+
+
+    <h3 style="color: white;">Restoring Deleted Media</h3>
+
+    <ul>
+        <li>You must be logged in to undo deleted media from your library</li>
+        <li>To undo deleted media, head over to the library dropdown menu and select "Undo last deletion this will automatically restore the last deleted media" or open your trash bin and restore the media from there when you will be prompted to restore the media</li>
+        <li>This will restore the last deleted media item back to your library</li>
+
+
+
+    <h3 style="color: white;">Trash Bin</h3>
+
+    <ul>
+        <li>Deleted media items are moved to the trash bin</li>
+        <li>You can access the trash bin from the library dropdown menu</li>
+        <li>From the trash bin, you can either restore deleted items back to your library or permanently delete them</li>
+        <li>Note: Permanently deleting items from the trash bin will remove them from your library database only and not from your computer, and they cannot be recovered without adding them back manually unless you have created a csv backup as described in the documentation below.</li>
+    </ul>
+
+
+     <h3 style="color: white;">Exporting & Importing a CSV" file backup</h3>
+
+     <ul>
+        <li>Note: This is highly recommended to do before making any major changes to your media library such as deleting a large amount of media or adding a large amount of media to your library this is to ensure that you have a backup of your media library database in case anything goes wrong and you need to restore it back to a previous state.</li>
+        <li>Note: We recomend saving the CSV" file backup to a safe location on your computer such as your documents folder but not on your desktop and not in the same location as your media files this is to ensure that you do not accidentally delete the backup file when deleting media files from your computer.</li>
+        <li>You can create a CSV" file backup of your media library by going to the library dropdown menu and selecting "Export Library to CSV". This will create a CSV" file backup of your media library database that you can save to your computer for safekeeping.</li>
+        <li>To restore your media library from a CSV" file backup, go to the library dropdown menu and select "Import Library from CSV". This will open your file explorer where you can select the CSV" file backup you created earlier. Once you select the file, it will restore your media library database to the state it was in when you created the backup.</li>
+        <li>Note: Importing a CSV" file backup will overwrite your current media library database with the data from the backup, so make sure to create a backup of your current library before importing if you want to keep it safe.</li>
+
+
+     <h3 style="color: white;">Editing Media Information</h3>
+     <ul>
+        <li>You must be logged in to edit media information in your media library</li>
+        <li>To edit media information, click on the media item you want to edit in the Title, Artist, Album column if using a touch screen just touch on the item until it changes to green then head to the library dropdown menu where the context menu appears, then select "Edit selected item" this will open a new window where you can edit the media information such as title, artist, album. Once you have made your changes just click "Save" and the changes will be applied to your media library database.</li>
+        <LI>Note: Editing media information will not change the actual media files on your computer, it will only update the information in your media library database.</li>
+        <LI>Note: If you want to change the actual media files on your computer you will need to do that manually by going to the location where the media files are stored on your computer and renaming them or moving them to a different location.</LI>
+        <LI>Note: If you have a CSV" file backup it is recommended to update the CSV" file backup after making any changes to your media library such as editing media information this is to ensure that you have an up to date backup of your media library database in case anything goes wrong and you need to restore it back to a previous state.</LI>
+        <LI>Note: You can also edit the media information directly in the CSV" file backup by opening the file in a spreadsheet program such as Microsoft Excel or Google Sheets and making your changes there then saving the file and importing it back into the application using the "Import Library from CSV" feature as described above.</LI>
+        <LI>Note you can also use third party media tag editing software like mp3tag to edit the media information directly in the media files on your computer this will change the information in the media library database when you add the media files back to your library after editing them this is a more advanced method and is recommended for users who are familiar with media tag editing software and want to make changes to the actual media files on their computer rather than just the information in the media library database.</LI>
+     </ul>
+    """
+
+
+
+
 
