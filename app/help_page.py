@@ -161,27 +161,6 @@ class OSKLineEdit(QtWidgets.QLineEdit):
         self.setAttribute(QtCore.Qt.WA_AcceptTouchEvents, True)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
-    def mousePressEvent(self, event):
-        QtCore.QTimer.singleShot(0, self._open_osk)
-        super().mousePressEvent(event)
-
-    def _open_osk(self):
-        try:
-            import comtypes.client
-            tip = comtypes.client.CreateObject("TextInputPanel.TextInputPanel")
-            hwnd = int(self.window().winId())
-            tip.AttachedEditWindow = hwnd
-            tip.Show()
-            return
-        except Exception:
-            pass
-
-        try:
-            QtCore.QProcess.startDetached(
-                r"C:\Program Files\Common Files\Microsoft Shared\ink\TabTip.exe"
-            )
-        except Exception:
-            pass
 
     def keyPressEvent(self, event):
         if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
@@ -407,7 +386,6 @@ class HelpPage(QtWidgets.QWidget):
                 if pos == cursor_pos:
                     self._help_match_index = i
                     break
-            # -------------------------------------------------
 
         else:
             # No matches found
@@ -415,14 +393,33 @@ class HelpPage(QtWidgets.QWidget):
             self.help_position_label.setText("")
             return
 
+        # ---------------------------------------------------------
+        # ⭐ FINAL FIX: prevent QTextBrowser from stealing focus
+        # ---------------------------------------------------------
+        self.help_search.setFocus()
+
+
     # ---------------------------------------------------------
     # Jump to next match
     # ---------------------------------------------------------
     def _next_match(self):
         if not self._help_matches:
             return
+
+        # Prevent textChanged → _run_search from firing during jump
+        self.help_search.blockSignals(True)
+
+        # Advance index
         self._help_match_index = (self._help_match_index + 1) % len(self._help_matches)
+
+        # Jump to the match
         self._jump_to_match(self._help_match_index)
+
+        # Re-enable textChanged
+        self.help_search.blockSignals(False)
+
+        # Keep focus in the search bar so Enter continues working
+        self.help_search.setFocus()
 
     # ---------------------------------------------------------
     # Jump helper
@@ -550,6 +547,10 @@ class HelpPage(QtWidgets.QWidget):
     # Handle keys coming from HelpPageOSK
     # ---------------------------------------------------------
     def _handle_osk_key(self, key):
+        # Ignore OSK key events when OSK is hidden
+        if not self.help_osk.isVisible():
+            return
+
         edit = self.help_search
 
         if key == "BACKSPACE":
@@ -571,6 +572,7 @@ class HelpPage(QtWidgets.QWidget):
         text = text[:cursor_pos] + key + text[cursor_pos:]
         edit.setText(text)
         edit.setCursorPosition(cursor_pos + len(key))
+
 
 
     def resizeEvent(self, event):
