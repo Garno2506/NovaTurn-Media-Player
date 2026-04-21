@@ -2,6 +2,152 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 from app.help_text import HELP_COL1, HELP_COL2, HELP_COL3
 
+
+# ---------------------------------------------------------
+# Premium Draggable On‑Screen Keyboard for Help Page
+# ---------------------------------------------------------
+class HelpPageOSK(QtWidgets.QFrame):
+    keyPressed = QtCore.pyqtSignal(str)   # emits characters to parent
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # -------------------------------
+        # Window style
+        # -------------------------------
+        self.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.setStyleSheet("""
+            QFrame {
+                background-color: #1E1E1E;
+                border-radius: 10px;
+            }
+            QPushButton {
+                background-color: #2A2A2A;
+                color: #E0E0E0;
+                border: 1px solid #444;
+                border-radius: 8px;
+                font-size: 16px;
+                padding: 6px;
+            }
+            QPushButton:pressed {
+                background-color: #3A3A3A;
+            }
+        """)
+
+        # Soft drop shadow
+        shadow = QtWidgets.QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(24)
+        shadow.setOffset(0, 4)
+        shadow.setColor(QtGui.QColor(0, 0, 0, 180))
+        self.setGraphicsEffect(shadow)
+
+        # -------------------------------
+        # Draggable state
+        # -------------------------------
+        self._drag_active = False
+        self._drag_pos = QtCore.QPoint()
+
+        # -------------------------------
+        # Layout
+        # -------------------------------
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
+        layout.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Key rows
+        row1 = "Q W E R T Y U I O P".split()
+        row2 = "A S D F G H J K L".split()
+        row3 = ["Shift", "Z", "X", "C", "V", "B", "N", "M", "Back"]
+        row4 = ["Space", "Enter"]
+
+        layout.addLayout(self._make_row(row1))
+        layout.addLayout(self._make_row(row2))
+        layout.addLayout(self._make_row(row3))
+        layout.addLayout(self._make_row(row4, big_space=True))
+
+        # Shift state
+        self.shift_on = False
+
+        # Default size
+        self.setFixedHeight(260)
+        self.setFixedWidth(700)
+
+    # ---------------------------------------------------------
+    # Create a row of keys
+    # ---------------------------------------------------------
+    def _make_row(self, keys, big_space=False):
+        row = QtWidgets.QHBoxLayout()
+        row.setSpacing(8)
+
+        for key in keys:
+            btn = QtWidgets.QPushButton(key)
+            btn.setFixedHeight(48)
+
+            if key == "Space":
+                btn.setFixedWidth(300)
+            elif key == "Enter":
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #1DB954;
+                        color: black;
+                        border-radius: 8px;
+                        font-weight: bold;
+                    }
+                    QPushButton:pressed {
+                        background-color: #17a74a;
+                    }
+                """)
+                btn.setFixedWidth(120)
+            else:
+                btn.setFixedWidth(48)
+
+            btn.clicked.connect(lambda _, k=key: self._handle_key(k))
+            row.addWidget(btn)
+
+        return row
+
+    # ---------------------------------------------------------
+    # Key handling
+    # ---------------------------------------------------------
+    def _handle_key(self, key):
+        if key == "Back":
+            self.keyPressed.emit("BACKSPACE")
+            return
+
+        if key == "Enter":
+            self.keyPressed.emit("ENTER")
+            return
+
+        if key == "Space":
+            self.keyPressed.emit(" ")
+            return
+
+        if key == "Shift":
+            self.shift_on = not self.shift_on
+            return
+
+        # Normal character
+        char = key.upper() if self.shift_on else key.lower()
+        self.keyPressed.emit(char)
+
+    # ---------------------------------------------------------
+    # Draggable behavior
+    # ---------------------------------------------------------
+    def mousePressEvent(self, event):
+        self._drag_active = True
+        self._drag_pos = event.globalPos() - self.frameGeometry().topLeft()
+        event.accept()
+
+    def mouseMoveEvent(self, event):
+        if self._drag_active:
+            self.move(event.globalPos() - self._drag_pos)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self._drag_active = False
+        event.accept()
+
 # ---------------------------------------------------------
 # Custom QLineEdit (OSK-friendly)
 # ---------------------------------------------------------
@@ -77,22 +223,39 @@ class HelpPage(QtWidgets.QWidget):
         main_layout.addWidget(self.help_search)
 
         # ---------------------------------------------------------
-        # Row 2 — Open Keyboard button
+        # Row — Open Keyboard + Clear (tight, left‑aligned)
         # ---------------------------------------------------------
+        # ---------------------------------------------------------
+        # Row — Open Keyboard + Clear (tight, left‑aligned)
+        # ---------------------------------------------------------
+        # ---------------------------------------------------------
+        # Row — Open Keyboard + Clear (tight, left‑aligned)
+        # ---------------------------------------------------------
+        # ---------------------------------------------------------
+        # Row — Open Keyboard + Clear (manual control)
+        # ---------------------------------------------------------
+        button_container = QtWidgets.QWidget()
+        button_container.setFixedWidth(260)   # <<< YOU CAN CHANGE THIS
+        button_row = QtWidgets.QHBoxLayout(button_container)
+        button_row.setContentsMargins(0, 0, 0, 0)
+        button_row.setSpacing(6)
+
         self.osk_button = QtWidgets.QPushButton("Open Keyboard")
         self.osk_button.setFixedHeight(36)
-        self.osk_button.clicked.connect(self._open_keyboard_manual)
-        main_layout.addWidget(self.osk_button, alignment=QtCore.Qt.AlignCenter)
+        self.osk_button.clicked.connect(self._toggle_osk)
 
-        # ---------------------------------------------------------
-        # Row 3 — Clear button (left aligned)
-        # ---------------------------------------------------------
-        clear_row = QtWidgets.QHBoxLayout()
         self.help_clear_btn = QtWidgets.QPushButton("Clear")
         self.help_clear_btn.setFixedHeight(32)
-        clear_row.addWidget(self.help_clear_btn, alignment=QtCore.Qt.AlignLeft)
-        clear_row.addStretch()
-        main_layout.addLayout(clear_row)
+
+        button_row.addWidget(self.osk_button)
+        button_row.addWidget(self.help_clear_btn)
+
+        # Add the container to the main layout (LEFT aligned)
+        main_layout.addWidget(button_container, alignment=QtCore.Qt.AlignLeft)
+
+
+
+
 
         # ---------------------------------------------------------
         # Row 4 — Match counters
@@ -162,27 +325,14 @@ class HelpPage(QtWidgets.QWidget):
         self.rb_col1.toggled.connect(lambda c: c and self._switch_column(0))
         self.rb_col2.toggled.connect(lambda c: c and self._switch_column(1))
         self.rb_col3.toggled.connect(lambda c: c and self._switch_column(2))
+                # ---------------------------------------------------------
+        # Premium Help Page OSK (initially hidden)
+        # ---------------------------------------------------------
+        self.help_osk = HelpPageOSK(self)
+        self.help_osk.hide()
+        self.help_osk.keyPressed.connect(self._handle_osk_key)
 
-    # ---------------------------------------------------------
-    # Manual OSK button
-    # ---------------------------------------------------------
-    def _open_keyboard_manual(self):
-        try:
-            import comtypes.client
-            tip = comtypes.client.CreateObject("TextInputPanel.TextInputPanel")
-            hwnd = int(self.window().winId())
-            tip.AttachedEditWindow = hwnd
-            tip.Show()
-            return
-        except Exception:
-            pass
 
-        try:
-            QtCore.QProcess.startDetached(
-                r"C:\Program Files\Common Files\Microsoft Shared\ink\TabTip.exe"
-            )
-        except Exception:
-            pass
 
     # ---------------------------------------------------------
     # Column factory
@@ -246,11 +396,24 @@ class HelpPage(QtWidgets.QWidget):
             self.help_match_label.setText(f"{count} matches found")
 
         if self._help_matches:
-            self._help_match_index = 0
+            # Jump to the first match
             self._jump_to_match(0)
+
+            # -------------------------------------------------
+            # ⭐ FIX: sync index with the match we actually land on
+            # -------------------------------------------------
+            cursor_pos = column.textCursor().position()
+            for i, pos in enumerate(self._help_matches):
+                if pos == cursor_pos:
+                    self._help_match_index = i
+                    break
+            # -------------------------------------------------
+
         else:
+            # No matches found
             self._help_match_index = -1
             self.help_position_label.setText("")
+            return
 
     # ---------------------------------------------------------
     # Jump to next match
@@ -270,12 +433,25 @@ class HelpPage(QtWidgets.QWidget):
 
         cursor = QtGui.QTextCursor(doc)
         cursor.setPosition(self._help_matches[index])
+        cursor.select(QtGui.QTextCursor.WordUnderCursor)
+
         column.setTextCursor(cursor)
         column.ensureCursorVisible()
 
+        # IMPORTANT FIX:
+        # Sync internal index with the match we actually jumped to
+        self._help_match_index = index
+
+        # Update match counter
         pos_idx = index + 1
         total = len(self._help_matches)
         self.help_position_label.setText(f"Match {pos_idx} of {total}")
+
+        # Ensure Enter works immediately
+        column.setFocus()
+        QtWidgets.QApplication.processEvents()
+
+
 
     # ---------------------------------------------------------
     # Clear search
@@ -325,4 +501,85 @@ class HelpPage(QtWidgets.QWidget):
         self.help_col1.verticalScrollBar().setValue(0)
         self.help_col2.verticalScrollBar().setValue(0)
         self.help_col3.verticalScrollBar().setValue(0)
+
+    # ---------------------------------------------------------
+    # Toggle OSK visibility + glowing button ring
+    # ---------------------------------------------------------
+    def _toggle_osk(self):
+        if self.help_osk.isVisible():
+            self.help_osk.hide()
+            # OSK OFF style
+            self.osk_button.setStyleSheet("""
+                QPushButton {
+                    border: 2px solid #444;
+                    border-radius: 6px;
+                    color: white;
+                    background-color: #222;
+                }
+                QPushButton:pressed {
+                    background-color: #333;
+                }
+            """)
+        else:
+            # Position at bottom center
+            parent_rect = self.rect()
+            osk_width = self.help_osk.width()
+            osk_height = self.help_osk.height()
+            x = (parent_rect.width() - osk_width) // 2
+            y = parent_rect.height() - osk_height - 20
+            self.help_osk.move(self.mapToGlobal(QtCore.QPoint(x, y)))
+
+            self.help_osk.show()
+            self.help_osk.raise_()
+
+            # OSK ON style (green ring)
+            self.osk_button.setStyleSheet("""
+                QPushButton {
+                    border: 2px solid #1DB954;
+                    border-radius: 6px;
+                    color: white;
+                    background-color: #222;
+                }
+                QPushButton:pressed {
+                    background-color: #333;
+                }
+            """)
+
+
+    # ---------------------------------------------------------
+    # Handle keys coming from HelpPageOSK
+    # ---------------------------------------------------------
+    def _handle_osk_key(self, key):
+        edit = self.help_search
+
+        if key == "BACKSPACE":
+            cursor_pos = edit.cursorPosition()
+            if cursor_pos > 0:
+                text = edit.text()
+                text = text[:cursor_pos - 1] + text[cursor_pos:]
+                edit.setText(text)
+                edit.setCursorPosition(cursor_pos - 1)
+            return
+
+        if key == "ENTER":
+            self._next_match()
+            return
+
+        # Normal character
+        cursor_pos = edit.cursorPosition()
+        text = edit.text()
+        text = text[:cursor_pos] + key + text[cursor_pos:]
+        edit.setText(text)
+        edit.setCursorPosition(cursor_pos + len(key))
+
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.help_osk.isVisible():
+            parent_rect = self.rect()
+            osk_width = self.help_osk.width()
+            osk_height = self.help_osk.height()
+            x = (parent_rect.width() - osk_width) // 2
+            y = parent_rect.height() - osk_height - 20
+            self.help_osk.move(self.mapToGlobal(QtCore.QPoint(x, y)))
 
