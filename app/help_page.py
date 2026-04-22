@@ -46,6 +46,14 @@ class HelpPageOSK(QtWidgets.QFrame):
         layout.setSpacing(10)
         layout.setAlignment(QtCore.Qt.AlignCenter)
 
+        # ---------------------------------------------------------
+        # ⭐ Small centered label above the keyboard rows
+        # ---------------------------------------------------------
+        title = QtWidgets.QLabel("NovaTurn's Draggable Keyboard")
+        title.setStyleSheet("color: #AAAAAA; font-size: 12px;")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(title)
+
         row1 = "Q W E R T Y U I O P".split()
         row2 = "A S D F G H J K L".split()
         row3 = ["Shift", "Z", "X", "C", "V", "B", "N", "M", "Back"]
@@ -258,7 +266,7 @@ class HelpPage(QtWidgets.QWidget):
     def _make_column(self):
         box = QtWidgets.QTextBrowser()
         box.setOpenExternalLinks(True)
-        box.setFixedHeight(300)
+        box.setFixedHeight(500)
         box.setStyleSheet(
             "font-size: 16px; color: #E0E0E0; background-color: #1E1E1E;"
         )
