@@ -696,7 +696,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         top_bar.addStretch()
 
-        self.menu_button = QtWidgets.QPushButton("Library ▾")
+        self.menu_button = QtWidgets.QPushButton("Admin Only ▾")
         self.menu_button.setFixedHeight(34)
         top_bar.addWidget(self.menu_button)
 
@@ -1146,7 +1146,7 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(
                 self,
                 "Admin Required",
-                "You must log in as admin to use the Library menu.",
+                "You must log in as admin to use the Administrator menu.",
             )
             return
 
