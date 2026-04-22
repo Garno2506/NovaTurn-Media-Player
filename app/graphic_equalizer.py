@@ -4,6 +4,13 @@ import os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
+ACCENT = "#1DB954"        # NovaTurn green
+ACCENT_SOFT = "#32E06F"
+BG_DARK = "#101010"
+BG_PANEL = "#181818"
+TEXT_MAIN = "#FFFFFF"
+TEXT_SUBTLE = "#C0C0C0"
+
 
 class EqCurveWidget(QtWidgets.QWidget):
     """Widget that draws a smooth EQ curve based on band gains."""
@@ -12,7 +19,7 @@ class EqCurveWidget(QtWidgets.QWidget):
         super().__init__(parent)
         self.gains = [0] * 10
         self._ready = False
-        self.setMinimumHeight(120)
+        self.setMinimumHeight(140)
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
 
         # Delay painting until widget has a valid size
@@ -30,44 +37,46 @@ class EqCurveWidget(QtWidgets.QWidget):
         if not self._ready:
             return
 
-        super().paintEvent(event)
-        if not self.gains:
+        rect = self.rect().adjusted(12, 12, -12, -12)
+        if rect.width() < 5 or rect.height() < 5:
             return
+
+        super().paintEvent(event)
 
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
 
-        rect = self.rect().adjusted(10, 10, -10, -10)
-        if rect.width() <= 0 or rect.height() <= 0:
-            return
-
-        painter.fillRect(rect, QtGui.QColor("#111111"))
+        # Background
+        painter.fillRect(rect, QtGui.QColor("#181818"))
 
         # Border
-        pen = QtGui.QPen(QtGui.QColor("#D4AF37"))
+        pen = QtGui.QPen(QtGui.QColor("#1DB954"))
         pen.setWidth(1)
         painter.setPen(pen)
         painter.drawRoundedRect(rect, 8, 8)
 
-        # Midline
-        grid_pen = QtGui.QPen(QtGui.QColor("#444444"))
+        # Midline (0 dB)
+        mid_y = rect.center().y()
+        grid_pen = QtGui.QPen(QtGui.QColor("#333333"))
         grid_pen.setStyle(QtCore.Qt.DashLine)
         painter.setPen(grid_pen)
-        mid_y = rect.center().y()
         painter.drawLine(rect.left(), mid_y, rect.right(), mid_y)
 
-        # Map gains (-12..12) to y
-        points = []
-        band_count = len(self.gains)
-        if band_count < 2:
+        # Gains
+        if not self.gains or len(self.gains) < 2:
             return
 
+        points = []
         for i, g in enumerate(self.gains):
-            x = rect.left() + (rect.width() * i) / (band_count - 1)
+            x = rect.left() + (rect.width() * i) / (len(self.gains) - 1)
             norm = (g + 12) / 24.0
             y = rect.bottom() - norm * rect.height()
             points.append(QtCore.QPointF(x, y))
 
+        if len(points) < 3:
+            return
+
+        # Smooth spline path
         path = QtGui.QPainterPath()
         path.moveTo(points[0])
 
@@ -79,34 +88,48 @@ class EqCurveWidget(QtWidgets.QWidget):
             c2 = QtCore.QPointF((p1.x() + p2.x()) / 2.0, p2.y())
             path.cubicTo(c1, c2, p2)
 
-        curve_pen = QtGui.QPen(QtGui.QColor("#D4AF37"))
+        # Fill under curve
+        if rect.height() <= 0:
+            return
+
+        fill_path = QtGui.QPainterPath(path)
+        fill_path.lineTo(points[-1].x(), rect.bottom())
+        fill_path.lineTo(points[0].x(), rect.bottom())
+        fill_path.closeSubpath()
+
+        gradient = QtGui.QLinearGradient(rect.left(), rect.top(), rect.left(), rect.bottom())
+        gradient.setColorAt(0.0, QtGui.QColor("#32E06F88"))
+        gradient.setColorAt(1.0, QtGui.QColor("#1DB95400"))
+        painter.fillPath(fill_path, gradient)
+
+        # Curve stroke
+        curve_pen = QtGui.QPen(QtGui.QColor("#32E06F"))
         curve_pen.setWidth(2)
         painter.setPen(curve_pen)
         painter.drawPath(path)
 
 
+
+
 class GraphicEqualizer(QtWidgets.QWidget):
     """
-    NovaTurn 10-Band Graphic Equalizer (crash-safe version)
+    NovaTurn 10-Band Graphic Equalizer — black + green, refined.
 
-    Features:
-    - 10-band octave EQ with vertical sliders
-    - Real-time EQ curve graph
-    - Built-in presets (Rock, Jazz, Classical, Vocal Boost, Flat)
-    - Save/Load user presets to eq_presets.json
-    - Optional VLC integration via set_vlc_player(player)
-    - Animated slider glow when moved
-    - Gold neon outline via inner frame (not on window)
-    - A/B comparison (Before/After) button
+    - 10-band EQ with vertical sliders
+    - Smooth curve with gradient + grid
+    - Slider glow, snap-to-zero, live dB tooltip
+    - Built-in + user presets with visual separation
+    - A/B bypass
+    - Safe JSON, optional VLC hook
     """
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("NovaTurn Graphic Equalizer")
         self.setMinimumSize(980, 520)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
-        # Top-level: background only (no styled background attribute, no border)
-        self.setStyleSheet("background-color: #1A1A1A;")
+        self.setStyleSheet(f"background-color: {BG_DARK}; color: {TEXT_MAIN};")
 
         self.frequencies = [
             "31", "62", "125", "250", "500",
@@ -115,7 +138,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
 
         self.sliders = []
         self._slider_timers = {}
-        self.vlc_player = None  # optional external player reference
+        self.vlc_player = None
 
         # Presets
         self.built_in_presets = {
@@ -136,34 +159,31 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self._update_curve()
         self._apply_to_vlc()
 
+        self._fade_in()
+
     # ------------------------------------------------------------
     # PUBLIC: optional VLC integration
     # ------------------------------------------------------------
     def set_vlc_player(self, player):
-        """
-        Optionally attach a VLC player instance.
-        This method is safe to ignore; the EQ will still work visually.
-        """
         self.vlc_player = player
         self._apply_to_vlc()
 
     # ------------------------------------------------------------
-    # BUILD UI
+    # UI BUILD
     # ------------------------------------------------------------
     def _build_ui(self):
         outer_layout = QtWidgets.QVBoxLayout(self)
         outer_layout.setContentsMargins(12, 12, 12, 12)
         outer_layout.setSpacing(0)
 
-        # Inner frame with gold border (safe, not on window)
         frame = QtWidgets.QFrame()
         frame.setObjectName("eqFrame")
-        frame.setStyleSheet("""
-            QFrame#eqFrame {
-                background-color: #1A1A1A;
-                border: 2px solid #D4AF37;
+        frame.setStyleSheet(f"""
+            QFrame#eqFrame {{
+                background-color: {BG_PANEL};
+                border: 2px solid {ACCENT};
                 border-radius: 6px;
-            }
+            }}
         """)
         outer_layout.addWidget(frame)
 
@@ -171,24 +191,24 @@ class GraphicEqualizer(QtWidgets.QWidget):
         main_layout.setContentsMargins(16, 16, 16, 16)
         main_layout.setSpacing(14)
 
-        # Top: EQ curve
+        # Curve
         self.curve_widget = EqCurveWidget(frame)
         main_layout.addWidget(self.curve_widget)
 
-        # Middle: sliders + dB scale
+        # Middle: sliders + right panel
         mid_layout = QtWidgets.QHBoxLayout()
         mid_layout.setSpacing(25)
 
         sliders_layout = QtWidgets.QHBoxLayout()
         sliders_layout.setSpacing(20)
 
-        for idx, freq in enumerate(self.frequencies):
+        for freq in self.frequencies:
             vbox = QtWidgets.QVBoxLayout()
             vbox.setSpacing(8)
 
             label = QtWidgets.QLabel(freq + " Hz")
             label.setAlignment(QtCore.Qt.AlignCenter)
-            label.setStyleSheet("color: white; font-size: 13px;")
+            label.setStyleSheet(f"color: {TEXT_MAIN}; font-size: 13px;")
             vbox.addWidget(label)
 
             slider = QtWidgets.QSlider(QtCore.Qt.Vertical)
@@ -199,6 +219,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
             slider.setFixedHeight(260)
             slider.setStyleSheet(self._slider_style(normal=True))
             slider.valueChanged.connect(self._on_slider_changed)
+            slider.setToolTip("0 dB")
             self.sliders.append(slider)
             vbox.addWidget(slider)
 
@@ -206,59 +227,55 @@ class GraphicEqualizer(QtWidgets.QWidget):
 
         mid_layout.addLayout(sliders_layout)
 
-        # Right side: dB scale + controls
+        # Right side
         right_layout = QtWidgets.QVBoxLayout()
         right_layout.setSpacing(12)
 
+        # dB scale
         db_scale = QtWidgets.QVBoxLayout()
         db_scale.setSpacing(30)
 
-        top = QtWidgets.QLabel("+12 dB")
-        mid = QtWidgets.QLabel("0 dB")
-        bot = QtWidgets.QLabel("-12 dB")
-
-        for lbl in (top, mid, bot):
-            lbl.setStyleSheet("color: white; font-size: 14px;")
+        for text in ["+12 dB", "0 dB", "-12 dB"]:
+            lbl = QtWidgets.QLabel(text)
+            lbl.setStyleSheet(f"color: {TEXT_SUBTLE}; font-size: 13px;")
             lbl.setAlignment(QtCore.Qt.AlignCenter)
-
-        db_scale.addWidget(top)
-        db_scale.addWidget(mid)
-        db_scale.addWidget(bot)
+            db_scale.addWidget(lbl)
 
         right_layout.addLayout(db_scale)
         right_layout.addSpacing(10)
 
-        # Preset controls
+        # Presets
         preset_box = QtWidgets.QGroupBox("Presets")
-        preset_box.setStyleSheet("""
-            QGroupBox {
-                color: white;
-                border: 1px solid #555555;
+        preset_box.setStyleSheet(f"""
+            QGroupBox {{
+                color: {TEXT_MAIN};
+                border: 1px solid #444444;
                 border-radius: 4px;
                 margin-top: 6px;
-            }
-            QGroupBox::title {
+                background-color: {BG_DARK};
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 8px;
                 padding: 0 3px 0 3px;
-            }
+            }}
         """)
         preset_layout = QtWidgets.QVBoxLayout(preset_box)
         preset_layout.setSpacing(6)
 
         self.preset_combo = QtWidgets.QComboBox()
-        self.preset_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #1A1A1A;
-                color: white;
+        self.preset_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {BG_PANEL};
+                color: {TEXT_MAIN};
                 border: 1px solid #555555;
                 padding: 2px 6px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1A1A1A;
-                color: white;
-                selection-background-color: #333333;
-            }
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {BG_PANEL};
+                color: {TEXT_MAIN};
+                selection-background-color: #303030;
+            }}
         """)
         self._refresh_preset_combo()
 
@@ -281,14 +298,14 @@ class GraphicEqualizer(QtWidgets.QWidget):
 
         right_layout.addWidget(preset_box)
 
-        # A/B comparison
+        # A/B
         self.ab_button = QtWidgets.QPushButton("A/B: Bypass OFF")
         self.ab_button.setCheckable(True)
         self.ab_button.setStyleSheet(self._button_style())
         self.ab_button.toggled.connect(self._toggle_ab)
         right_layout.addWidget(self.ab_button)
 
-        # Reset button
+        # Reset
         reset_btn = QtWidgets.QPushButton("Reset (Flat)")
         reset_btn.setStyleSheet(self._button_style())
         reset_btn.clicked.connect(self.reset_sliders)
@@ -303,7 +320,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
     # STYLES
     # ------------------------------------------------------------
     def _slider_style(self, normal=True):
-        handle_color = "#D4AF37" if normal else "#FFE680"
+        handle_color = ACCENT if normal else ACCENT_SOFT
         return f"""
         QSlider::groove:vertical {{
             background: #333333;
@@ -317,36 +334,46 @@ class GraphicEqualizer(QtWidgets.QWidget):
             border-radius: 4px;
         }}
         QSlider::sub-page:vertical {{
-            background: #D4AF37;
+            background: {ACCENT};
         }}
         """
 
     def _button_style(self):
-        return """
-        QPushButton {
-            background-color: #1A1A1A;
-            border: 1px solid #D4AF37;
-            color: white;
+        return f"""
+        QPushButton {{
+            background-color: {BG_PANEL};
+            border: 1px solid {ACCENT};
+            color: {TEXT_MAIN};
             padding: 4px 8px;
             font-size: 13px;
-        }
-        QPushButton:hover {
-            background-color: #333333;
-        }
-        QPushButton:checked {
-            background-color: #444444;
-        }
+        }}
+        QPushButton:hover {{
+            background-color: #262626;
+        }}
+        QPushButton:checked {{
+            background-color: #202820;
+        }}
         """
 
     # ------------------------------------------------------------
-    # SLIDER HANDLING
+    # SLIDERS
     # ------------------------------------------------------------
     def _on_slider_changed(self, value):
         slider = self.sender()
         if slider is None:
             return
 
-        # Animated glow: temporarily brighten handle
+        # Snap to 0 dB when near center
+        if -1 <= value <= 1 and value != 0:
+            slider.blockSignals(True)
+            slider.setValue(0)
+            slider.blockSignals(False)
+            value = 0
+
+        # Tooltip with live dB
+        slider.setToolTip(f"{value:+d} dB")
+
+        # Glow effect
         slider.setStyleSheet(self._slider_style(normal=False))
         if slider not in self._slider_timers:
             timer = QtCore.QTimer(self)
@@ -365,6 +392,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
         for s, g in zip(self.sliders, gains):
             s.blockSignals(True)
             s.setValue(g)
+            s.setToolTip(f"{g:+d} dB")
             s.blockSignals(False)
         self._update_curve()
         self._apply_to_vlc()
@@ -389,24 +417,35 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self.preset_combo.blockSignals(True)
         self.preset_combo.clear()
 
+        # Built-ins with star prefix
         for name in sorted(self.built_in_presets.keys()):
-            self.preset_combo.addItem(name)
+            self.preset_combo.addItem(f"★ {name}")
 
+        # Separator + user presets
         if self.user_presets:
             self.preset_combo.insertSeparator(self.preset_combo.count())
             for name in sorted(self.user_presets.keys()):
-                self.preset_combo.addItem(name)
+                self.preset_combo.addItem(f"● {name}")
 
         self.preset_combo.blockSignals(False)
+
         if current:
             idx = self.preset_combo.findText(current)
             if idx >= 0:
                 self.preset_combo.setCurrentIndex(idx)
 
+    def _decode_preset_name(self, combo_text):
+        if combo_text.startswith("★ "):
+            return combo_text[2:], "built_in"
+        if combo_text.startswith("● "):
+            return combo_text[2:], "user"
+        return combo_text, "unknown"
+
     def _apply_selected_preset(self):
-        name = self.preset_combo.currentText()
-        if name in self.built_in_presets:
-            gains = self.built_in_presets[name]
+        combo_text = self.preset_combo.currentText()
+        name, kind = self._decode_preset_name(combo_text)
+        if kind == "built_in":
+            gains = self.built_in_presets.get(name)
         else:
             gains = self.user_presets.get(name)
         if gains is None:
@@ -435,7 +474,10 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self._refresh_preset_combo()
 
     def _delete_selected_user_preset(self):
-        name = self.preset_combo.currentText()
+        combo_text = self.preset_combo.currentText()
+        name, kind = self._decode_preset_name(combo_text)
+        if kind != "user":
+            return
         if name in self.user_presets:
             reply = QtWidgets.QMessageBox.question(
                 self,
@@ -472,7 +514,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
             pass
 
     # ------------------------------------------------------------
-    # A/B COMPARISON
+    # A/B
     # ------------------------------------------------------------
     def _toggle_ab(self, checked):
         if checked:
@@ -484,25 +526,32 @@ class GraphicEqualizer(QtWidgets.QWidget):
             self.ab_button.setText("A/B: Bypass OFF")
 
     # ------------------------------------------------------------
-    # VLC INTEGRATION (OPTIONAL)
+    # VLC HOOK (optional)
     # ------------------------------------------------------------
     def _apply_to_vlc(self):
-        """
-        Placeholder for VLC integration.
-
-        If you later call set_vlc_player(player) with a VLC media player
-        that supports equalizer bands, you can implement the mapping here.
-
-        Out of the box, this does nothing and is completely safe.
-        """
         if self.vlc_player is None:
             return
-        # Example (pseudo-code, adjust to your VLC wrapper):
+        # Example placeholder:
         # gains = self._get_gains()
         # for i, g in enumerate(gains):
         #     self.vlc_player.set_equalizer_band(i, g)
         # self.vlc_player.apply_equalizer()
         pass
+
+    # ------------------------------------------------------------
+    # WINDOW FX
+    # ------------------------------------------------------------
+    def _fade_in(self):
+        self._opacity_effect = QtWidgets.QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._opacity_effect)
+        self._opacity_effect.setOpacity(0.0)
+
+        self._fade_anim = QtCore.QPropertyAnimation(self._opacity_effect, b"opacity", self)
+        self._fade_anim.setDuration(220)
+        self._fade_anim.setStartValue(0.0)
+        self._fade_anim.setEndValue(1.0)
+        self._fade_anim.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+        self._fade_anim.start()
 
 
 if __name__ == "__main__":
