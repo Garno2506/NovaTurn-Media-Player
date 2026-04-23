@@ -1063,9 +1063,32 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
     def open_graphic_equalizer(self):
         from app.graphic_equalizer import GraphicEqualizer
-        self.eq_window = GraphicEqualizer()
-        self.eq_window.set_vlc_player(self.player)   # <-- IMPORTANT
+        if not hasattr(self, "eq_window") or self.eq_window is None:
+            self.eq_window = GraphicEqualizer()
+            self.eq_window.setParent(self)
+            self.eq_window.setWindowFlag(QtCore.Qt.Window, True)
+            self.eq_window.set_vlc_player(self.player)
         self.eq_window.show()
+        self.eq_window.raise_()
+        self.eq_window.activateWindow()
+
+
+    def closeEvent(self, event):
+        # Stop playback
+        try:
+            self.player.stop()
+        except Exception:
+            pass
+
+        # Close EQ if it exists
+        try:
+            if hasattr(self, "eq_window") and self.eq_window is not None:
+                self.eq_window.close()
+        except Exception:
+            pass
+
+        super().closeEvent(event)
+
 
 
     def _connect_signals(self):
