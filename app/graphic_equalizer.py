@@ -301,7 +301,6 @@ class GraphicEqualizer(QtWidgets.QWidget):
 
         self.setWindowTitle("NovaTurn Graphic Equalizer")
         self.setMinimumSize(980, 520)
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
         self.setStyleSheet(f"background-color: {BG_DARK}; color: {TEXT_MAIN};")
 
