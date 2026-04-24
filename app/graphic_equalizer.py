@@ -599,7 +599,8 @@ class GraphicEqualizer(QtWidgets.QWidget):
             gains = self.user_presets.get(name)
 
         if gains:
-            self._set_gains(gains)
+            self._animate_sliders_to(gains)
+
 
     def _save_current_as_preset(self):
         gains = self._get_gains()
@@ -669,14 +670,15 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self._save_state()
 
     def _on_boost_clicked(self):
-        gains = [max(-12, min(12, g + self.boost_amount)) for g in self._get_gains()]
-        self._set_gains(gains)
+        new = [max(-12, min(12, g + self.boost_amount)) for g in self._get_gains()]
+        self._animate_sliders_to(new)
         self._save_state()
 
     def _on_boost_minus_clicked(self):
-        gains = [max(-12, min(12, g - self.boost_amount)) for g in self._get_gains()]
-        self._set_gains(gains)
+        new = [max(-12, min(12, g - self.boost_amount)) for g in self._get_gains()]
+        self._animate_sliders_to(new)
         self._save_state()
+
 
     # ------------------------------
     # A/B
@@ -684,7 +686,7 @@ class GraphicEqualizer(QtWidgets.QWidget):
     def _toggle_ab(self, checked):
         if checked:
             self._ab_stored_gains = self._get_gains()
-            self._set_gains([0] * len(self.sliders))
+            self._animate_sliders_to([0] * len(self.sliders))
             self.ab_button.setText("A/B: Bypass ON")
         else:
             self._set_gains(self._ab_stored_gains)
@@ -737,6 +739,34 @@ class GraphicEqualizer(QtWidgets.QWidget):
         except Exception:
             pass
         super().closeEvent(event)
+
+
+    def _animate_sliders_to(self, target_gains, duration=350):
+        """Smoothly animate sliders to new preset values."""
+        animations = []
+
+        for slider, target in zip(self.sliders, target_gains):
+            anim = QtCore.QPropertyAnimation(slider, b"value", self)
+            anim.setDuration(duration)
+            anim.setStartValue(slider.value())
+            anim.setEndValue(int(target))
+            anim.setEasingCurve(QtCore.QEasingCurve.InOutQuad)
+            anim.valueChanged.connect(lambda _=None: self._update_curve())
+            anim.valueChanged.connect(lambda _=None: self._apply_to_vlc())
+            animations.append(anim)
+
+        # Keep animations alive
+        self._active_anims = animations
+
+        for anim in animations:
+            anim.start()
+
+
+
+
+
+
+
 
     # ------------------------------
     # Fade-in Animation
