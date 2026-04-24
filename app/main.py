@@ -524,14 +524,21 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.btn_nav_library = nav("Library")
         self.btn_nav_now_playing = nav("Now Playing")
         self.btn_nav_stats = nav("Statistics")
+        self.btn_nav_eq = nav("EQ")
+        self.btn_nav_eq = nav("EQ")
+        self.btn_nav_eq.clicked.connect(self.open_graphic_equalizer)
+        sidebar_layout.addWidget(self.btn_nav_eq)
+
 
         sidebar_layout.addWidget(self.btn_nav_home)
         sidebar_layout.addWidget(self.btn_nav_library)
         sidebar_layout.addWidget(self.btn_nav_now_playing)
         sidebar_layout.addWidget(self.btn_nav_stats)
+        sidebar_layout.addWidget(self.btn_nav_eq)
 
         sidebar_layout.addStretch()
         root.addWidget(self.sidebar)
+
 
         # ---------------- Stacked pages ----------------
         self.stacked = QtWidgets.QStackedWidget()
@@ -1029,12 +1036,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         act_undo_delete = self.library_menu.addAction("Undo Last Delete")
         act_open_trash = self.library_menu.addAction("Open Trash Bin")
 
-        # ------------------------------------------------------------
-        # NEW: Graphic Equalizer
-        # ------------------------------------------------------------
-        act_graphic_eq = self.library_menu.addAction("Graphic Equalizer")
-        self.library_menu.addSeparator()
-
         act_export = self.library_menu.addAction("Export Library to CSV")
         act_import = self.library_menu.addAction("Import Library from CSV")
         self.library_menu.addSeparator()
@@ -1049,7 +1050,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.act_delete_all = act_delete_all
         self.act_undo_delete = act_undo_delete
         self.act_open_trash = act_open_trash
-        self.act_graphic_eq = act_graphic_eq
         self.act_export = act_export
         self.act_import = act_import
         self.act_edit_metadata = act_edit_metadata
@@ -1058,7 +1058,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # ------------------------------------------------------------
         # CONNECT SIGNALS
         # ------------------------------------------------------------
-        self.act_graphic_eq.triggered.connect(self.open_graphic_equalizer)
 
 
     def open_graphic_equalizer(self):
