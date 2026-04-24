@@ -107,14 +107,16 @@ class EqCurveWidget(QtWidgets.QWidget):
 
 
 class LedMeter(QtWidgets.QWidget):
-    """Vertical LED meter with peak-hold indicator."""
+    """Vertical LED meter with peak-hold indicator and glow."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.level = 0.0
         self.peak = 0.0
-        self.setMinimumWidth(10)
-        self.setMaximumWidth(10)
+
+        # Match slider groove width
+        self.setMinimumWidth(4)
+        self.setMaximumWidth(4)
         self.setMinimumHeight(80)
 
     def set_levels(self, level, peak):
@@ -145,10 +147,23 @@ class LedMeter(QtWidgets.QWidget):
             bar_rect = QtCore.QRect(rect.left(), rect.bottom() - led_height, rect.width(), led_height)
             painter.fillRect(bar_rect, color)
 
-        # Peak marker
+        # Peak marker position
         peak_y = rect.bottom() - int(h * self.peak)
+
+        # --- GLOW EFFECT ---
+        glow_strength = int(12 * self.peak)  # stronger glow at higher peaks
+        if glow_strength > 0:
+            glow_color = QtGui.QColor(255, 255, 255, 80)  # soft white glow
+            glow_pen = QtGui.QPen(glow_color)
+            glow_pen.setWidth(glow_strength)
+            painter.setPen(glow_pen)
+            painter.drawLine(rect.center().x(), peak_y, rect.center().x(), peak_y)
+
+        # Peak marker (solid white)
         peak_rect = QtCore.QRect(rect.left(), peak_y - 2, rect.width(), 3)
         painter.fillRect(peak_rect, QtGui.QColor("#FFFFFF"))
+
+
 
 
 
