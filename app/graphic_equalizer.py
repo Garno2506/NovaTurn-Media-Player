@@ -164,6 +164,68 @@ class LedMeter(QtWidgets.QWidget):
         painter.fillRect(peak_rect, QtGui.QColor("#FFFFFF"))
 
 
+class StereoVuMeter(QtWidgets.QWidget):
+    """Master stereo VU meter with peak hold and glow."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.left = 0.0
+        self.right = 0.0
+        self.left_peak = 0.0
+        self.right_peak = 0.0
+        self.setMinimumHeight(40)
+
+    def set_levels(self, left, right, left_peak, right_peak):
+        self.left = left
+        self.right = right
+        self.left_peak = left_peak
+        self.right_peak = right_peak
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        rect = self.rect()
+        mid = rect.center().x()
+
+        # Background
+        painter.fillRect(rect, QtGui.QColor("#181818"))
+
+        # Draw one channel
+        def draw_channel(x1, x2, level, peak):
+            width = x2 - x1
+            bar_width = int(width * level)
+
+            # Color mapping
+            if level < 0.33:
+                color = QtGui.QColor("#1DB954")
+            elif level < 0.66:
+                color = QtGui.QColor("#E6C229")
+            else:
+                color = QtGui.QColor("#FF3B30")
+
+            # Bar
+            painter.fillRect(QtCore.QRect(x1, rect.top(), bar_width, rect.height()), color)
+
+            # Glow
+            glow_strength = int(10 * peak)
+            if glow_strength > 0:
+                glow_color = QtGui.QColor(255, 255, 255, 60)
+                pen = QtGui.QPen(glow_color)
+                pen.setWidth(glow_strength)
+                painter.setPen(pen)
+                painter.drawLine(x1 + bar_width, rect.top(), x1 + bar_width, rect.bottom())
+
+            # Peak marker
+            peak_x = x1 + int(width * peak)
+            painter.fillRect(QtCore.QRect(peak_x - 2, rect.top(), 3, rect.height()), QtGui.QColor("#FFFFFF"))
+
+        # Left channel
+        draw_channel(rect.left(), mid - 4, self.left, self.left_peak)
+
+        # Right channel
+        draw_channel(mid + 4, rect.right(), self.right, self.right_peak)
 
 
 
@@ -210,6 +272,12 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self.limiter_enabled = True
         self.boost_amount = 3  # dB
 
+        # Master VU meter state
+        self.vu_left = 0.0
+        self.vu_right = 0.0
+        self.vu_left_peak = 0.0
+        self.vu_right_peak = 0.0
+
         self._build_ui()
         self._load_user_presets()
         self._load_state()
@@ -220,6 +288,10 @@ class GraphicEqualizer(QtWidgets.QWidget):
         self.led_timer = QtCore.QTimer(self)
         self.led_timer.timeout.connect(self._update_leds)
         self.led_timer.start(40)  # 25 FPS
+        # Master VU meter timer
+        self.vu_timer = QtCore.QTimer(self)
+        self.vu_timer.timeout.connect(self._update_vu)
+        self.vu_timer.start(40)
 
         self._fade_in()
 
@@ -306,6 +378,12 @@ class GraphicEqualizer(QtWidgets.QWidget):
         # Curve
         self.curve_widget = EqCurveWidget(frame)
         main.addWidget(self.curve_widget)
+        # Master VU meter
+        self.vu_meter = StereoVuMeter(frame)
+        main.addWidget(self.vu_meter)
+        # Master VU meter
+        self.vu_meter = StereoVuMeter(frame)
+        main.addWidget(self.vu_meter)
 
         # Middle section
         mid = QtWidgets.QHBoxLayout()
@@ -549,6 +627,40 @@ class GraphicEqualizer(QtWidgets.QWidget):
             if i < len(self.led_meters):
                 self.led_meters[i].set_levels(level, self.peak_levels[i])
 
+    def _update_vu(self):
+        # Simulate stereo movement using slider activity
+        gains = self._get_gains()
+
+        # Left = lower bands, Right = higher bands
+        left_raw = sum(gains[:5]) / 60.0
+        right_raw = sum(gains[5:]) / 60.0
+
+        # Clamp
+        left = max(0.0, min(1.0, (left_raw + 1) / 2))
+        right = max(0.0, min(1.0, (right_raw + 1) / 2))
+
+        # Peak logic
+        if left > self.vu_left_peak:
+            self.vu_left_peak = left
+        else:
+            self.vu_left_peak = max(0.0, self.vu_left_peak - 0.01)
+
+        if right > self.vu_right_peak:
+            self.vu_right_peak = right
+        else:
+            self.vu_right_peak = max(0.0, self.vu_right_peak - 0.01)
+
+        # Smooth decay for bar
+        self.vu_left = (self.vu_left * 0.8) + (left * 0.2)
+        self.vu_right = (self.vu_right * 0.8) + (right * 0.2)
+
+        # Update widget
+        self.vu_meter.set_levels(
+            self.vu_left,
+            self.vu_right,
+            self.vu_left_peak,
+            self.vu_right_peak
+        )
 
     # ------------------------------
     # Reset
