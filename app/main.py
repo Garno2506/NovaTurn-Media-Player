@@ -258,7 +258,6 @@ class NovaTurnSplash(QSplashScreen):
         h = self.pixmap().height()
         self.version_label.move(margin, h - self.version_label.height() - margin)
 
-
     def _position_status_label(self):
         # Center horizontally, slightly below vertical center
         w = self.pixmap().width()
@@ -340,8 +339,24 @@ class NovaTurnSplash(QSplashScreen):
                 cb()
             return
 
+# ------------------------------------------------------------
+# Bluetooth audio detection helper (must be ABOVE the class)
+# ------------------------------------------------------------
 
+import winreg
 
+def _is_bluetooth_audio():
+    try:
+        # Check if Bluetooth audio registry branch exists
+        winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\ControlSet001\Enum\BTHENUM"
+        )
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception:
+        return False
 
 # ============================================================
 #   MEDIAPLAYER INIT + GLOBAL PATCHES (UPDATED)
@@ -420,8 +435,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self._apply_stylesheet()
         self._create_protected_menu()
 
-
-
         # Load data AFTER UI exists
         self._load_library()
         self._load_recently_played()
@@ -446,7 +459,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
 
-
     # ------------------------------------------------------------
     # Attach VLC events
     # DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
@@ -463,7 +475,15 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
     def ensure_vlc(self):
         if self.instance is None:
             vlc = get_vlc()
-            self.instance = vlc.Instance("--aout=directsound")
+
+            # Bluetooth-safe backend selection
+            if _is_bluetooth_audio():
+            # WASAPI backend (no extra flags)
+                self.instance = vlc.Instance("--aout=wasapi")
+            else:
+            # Normal backend
+                self.instance = vlc.Instance("--aout=directsound")
+
             self.player = self.instance.media_player_new()
             self.player.audio_set_volume(self._pre_mute_volume)
 
@@ -525,7 +545,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.btn_nav_now_playing = nav("Now Playing")
         self.btn_nav_stats = nav("Statistics")
 
-
         sidebar_layout.addWidget(self.btn_nav_home)
         sidebar_layout.addWidget(self.btn_nav_library)
         sidebar_layout.addWidget(self.btn_nav_now_playing)
@@ -537,7 +556,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         sidebar_layout.addStretch()
         root.addWidget(self.sidebar)
-
 
         # ---------------- Stacked pages ----------------
         self.stacked = QtWidgets.QStackedWidget()
@@ -733,7 +751,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.help_button.clicked.connect(
             lambda: self.stacked.setCurrentIndex(self.HELP_PAGE_INDEX)
         )
-
 
         # ---------------- MIDDLE LAYOUT + SPLITTER ----------------
         middle_layout = QtWidgets.QHBoxLayout()
@@ -1007,7 +1024,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         self.stacked.addWidget(self.page_stats)
 
-
     # ============================================================
     #         Help page Code
     # ============================================================
@@ -1058,7 +1074,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         # CONNECT SIGNALS
         # ------------------------------------------------------------
 
-
     def open_graphic_equalizer(self):
         from app.graphic_equalizer import GraphicEqualizer
         if not hasattr(self, "eq_window") or self.eq_window is None:
@@ -1069,7 +1084,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.eq_window.show()
         self.eq_window.raise_()
         self.eq_window.activateWindow()
-
 
     def closeEvent(self, event):
         # Stop playback
@@ -1086,8 +1100,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             pass
 
         super().closeEvent(event)
-
-
 
     def _connect_signals(self):
         """Connects all UI signals."""
@@ -1117,7 +1129,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
 
         # Login
         self.login_button.clicked.connect(self._open_login_dialog)
-
 
         # Library interactions
         self.library_list.cellDoubleClicked.connect(self.on_library_double_click)
@@ -1162,8 +1173,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         self.position_slider.installEventFilter(self)
         self.search_edit.installEventFilter(self)
         self.youtube_search.installEventFilter(self)
-
-
 
     # ------------------------------------------------------------
     # ADMIN-ONLY LIBRARY MENU
@@ -1666,10 +1675,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             media_id = random.choice([r[0] for r in rows])
             self.play_media_id(media_id)
 
-
-
-
-
     # ------------------------------------------------------------
     # EQUALIZER (volume-reactive)
     # DO NOT MOVE OR ALTER ANYTHING TO DO WITH VLC IN THIS SCRIPT IT WILL BRAKE THE APP
@@ -1727,7 +1732,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
             all_item.setFont(0, font)
 
             self.artist_tree.addTopLevelItem(all_item)
-
 
         artists = set()
         for _, path, title, artist, _, _, is_video in filtered:
@@ -2032,7 +2036,6 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.warning(self, "Import Error", f"Could not import library:\n{e}")
 
-
     # ============================================================
     #  CHUNK F STATISTICS PAGE + NAVIGATION + MAIN()
     # ============================================================
@@ -2233,16 +2236,12 @@ class MediaPlayer(DialogsMixin, StylesMixin, QtWidgets.QMainWindow):
     def set_page(self, index: int):
         self.stacked.setCurrentIndex(index)
 
-
-
     def set_page(self, index):
         # If leaving Help page → reset it
         if hasattr(self, "page_help") and self.stacked.currentIndex() == self.HELP_PAGE_INDEX:
             self.page_help.reset_page()
 
         self.stacked.setCurrentIndex(index)
-
-
 
     # ------------------------------------------------------------
     # OSK EVENT FILTER (SLIDER PREVIEW + OSK + YOUTUBE HOVER + ENTER)
