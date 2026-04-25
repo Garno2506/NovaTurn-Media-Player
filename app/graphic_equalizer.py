@@ -151,7 +151,7 @@ def paintEvent(self, event):
 
     # Draw curve line
     pen = QtGui.QPen(QtGui.QColor("#1DB954"))
-    pen.setWidth(3)
+    pen.setWidth(1)
     pen.setCapStyle(QtCore.Qt.RoundCap)
     pen.setJoinStyle(QtCore.Qt.RoundJoin)
     painter.setPen(pen)
@@ -902,12 +902,19 @@ class GraphicEqualizer(QtWidgets.QWidget):
             pass
 
     def closeEvent(self, event):
+        # Force VLC to stop instantly
         try:
-            if self.vlc_player is not None:
-                self.vlc_player.set_equalizer(None)
+            if self.player is not None:
+                self.player.stop()
+                self.player.release()
+
+            if self.instance is not None:
+                self.instance.release()
         except Exception:
             pass
+
         super().closeEvent(event)
+
 
 
     def _animate_sliders_to(self, target_gains, duration=350):
