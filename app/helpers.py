@@ -7,9 +7,7 @@ import requests
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
 PASSWORD = "letmein"  # Change this if you want
-
 
 # ---------------------------------------------------------
 # WINDOWS BLUR (ACRYLIC-LIKE)
@@ -54,7 +52,6 @@ def enable_windows_blur(hwnd: int):
 
     except Exception as e:
         print("Blur not available:", e)
-
 
 # ---------------------------------------------------------
 # ALBUM ART LOADING (EMBEDDED + ONLINE LOOKUP)
@@ -121,7 +118,6 @@ def load_album_art(label: QtWidgets.QLabel, title_label: QtWidgets.QLabel,
     except Exception as e:
         print("Online artwork lookup failed:", e)
 
-
 # ---------------------------------------------------------
 # FLOATING MINI-PLAYER POSITIONING
 # ---------------------------------------------------------
@@ -139,10 +135,6 @@ def position_floating_window(window: QtWidgets.QWidget):
 
     window.move(x, y)
 
-
-# ---------------------------------------------------------
-# RECENTLY PLAYED HELPERS
-# ---------------------------------------------------------
 def add_to_recently_played(db, media_id: int):
     """
     Wrapper for adding a media item to the recently played list.
@@ -151,3 +143,6 @@ def add_to_recently_played(db, media_id: int):
         db.add_recently_played(media_id)
     except Exception as e:
         print("Failed to add recently played:", e)
+
+
+
